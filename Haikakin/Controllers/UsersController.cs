@@ -62,14 +62,20 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "User Email already exists." });
             }
 
+            var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
             //檢查手機有沒有被使用過，理論上不會
-            if (_smsRepo.GetSmsModel(model.PhoneNumber).IsUsed)
+            if (smsModel == null)
+            {
+                return BadRequest(new { message = "Phone number not verification." });
+            }
+
+            if (smsModel.IsUsed)
             {
                 return BadRequest(new { message = "Phone number was used." });
             }
 
             //檢查驗證碼對不對
-            if (_smsRepo.GetSmsModel(model.PhoneNumber).VerityCode != model.SmsCode)
+            if (smsModel.VerityCode != model.SmsCode)
             {
                 return BadRequest(new { message = "SmsCode is wrong." });
             }
@@ -80,6 +86,12 @@ namespace Haikakin.Controllers
             {
                 return BadRequest(new { message = "Error while registering." });
             }
+
+            smsModel.IsUsed = true;
+            if (_smsRepo.UpdateSmsModel(smsModel))
+            {
+                return BadRequest(new { message = "Unknown error." });
+            };
 
             //補寄信流程
 
@@ -156,9 +168,9 @@ namespace Haikakin.Controllers
         {
             //檢查該手機號碼是否註冊過
             var smsModel = _smsRepo.GetSmsModel(phoneNumber);
-            if (smsModel != null )
+            if (smsModel != null)
             {
-                if(smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
+                if (smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
             }
             //產生驗證用字串
             var randomString = SmsRandomNumber.CreatedNumber();
