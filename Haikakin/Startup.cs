@@ -59,6 +59,7 @@ namespace Haikakin
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ISmsRepository, SmsRepository>();
             services.AddAutoMapper(typeof(HaikakinMappings));
             services.AddApiVersioning(options =>
             {

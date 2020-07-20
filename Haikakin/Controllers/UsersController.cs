@@ -155,9 +155,10 @@ namespace Haikakin.Controllers
         public IActionResult SmsVerityCode(string phoneNumber)
         {
             //檢查該手機號碼是否註冊過
-            if (_smsRepo.GetSmsModel(phoneNumber).IsUsed)
+            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
+            if (smsModel != null )
             {
-                return BadRequest(new { message = "Number was used." });
+                if(smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
             }
             //產生驗證用字串
             var randomString = SmsRandomNumber.CreatedNumber();
@@ -189,7 +190,6 @@ namespace Haikakin.Controllers
             //確認OK之後傳入DB裡面
 
             //抓一下有沒有已存在的
-            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
             if (smsModel == null)
             {
                 //沒有就幫他建立一個新的
@@ -197,6 +197,7 @@ namespace Haikakin.Controllers
                 {
                     PhoneNumber = phoneNumber,
                     VerityCode = randomString,
+                    VerityLimitTime = DateTime.UtcNow.AddDays(1)
                 };
 
                 if (!_smsRepo.CreateSmsModel(smsModel))

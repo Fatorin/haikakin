@@ -9,6 +9,11 @@ namespace Haikakin.Data
 {
     public class ApplicationDbContext : DbContext
     {
+        const int InitUserSql = 10001000;
+        const int InitOrderSql = 20001000;
+        const int InitProductSql = 30001000;
+        const int InitSmsSql = 40001000;
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
 
@@ -16,7 +21,10 @@ namespace Haikakin.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>().Property(u => u.Id).ValueGeneratedOnAdd();
+            modelBuilder.Entity<User>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitUserSql);
+            modelBuilder.Entity<Order>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitOrderSql);
+            modelBuilder.Entity<Product>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitProductSql);
+            modelBuilder.Entity<SmsModel>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitSmsSql);
         }
 
         public DbSet<User> Users { get; set; }
