@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Google.Apis.Auth;
 using Google.Apis.Auth.OAuth2;
+using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
@@ -18,9 +19,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.TwiML.Voice;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -31,16 +29,18 @@ namespace Haikakin.Controllers
     public class UsersController : ControllerBase
     {
         private IUserRepository _userRepo;
+        private ISmsRepository _smsRepo;
         private readonly AppSettings _appSettings;
 
-        public UsersController(IUserRepository userRepo, IOptions<AppSettings> appSettings)
+        public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
         {
             _userRepo = userRepo;
+            _smsRepo = smsRepo;
             _appSettings = appSettings.Value;
         }
 
         [AllowAnonymous]
-        [HttpPost("authenticate")]
+        [HttpPost("Authenticate")]
         public IActionResult Authenticate([FromBody] AuthenticationModel model)
         {
             var user = _userRepo.Authenticate(model.Email, model.Password, LoginTypeEnum.Normal);
@@ -53,16 +53,25 @@ namespace Haikakin.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("register")]
+        [HttpPost("Register")]
         public IActionResult Register([FromBody] RegisterModel model)
         {
-            bool ifUserNameUnique = _userRepo.IsUniqueUser(model.Email);
-
-            //檢查驗證碼
-
-            if (!ifUserNameUnique)
+            //檢查EMAIL有沒有使用過
+            if (!_userRepo.IsUniqueUser(model.Email))
             {
-                return BadRequest(new { message = "Useranme already exists." });
+                return BadRequest(new { message = "User Email already exists." });
+            }
+
+            //檢查手機有沒有被使用過，理論上不會
+            if (_smsRepo.GetSmsModel(model.PhoneNumber).IsUsed)
+            {
+                return BadRequest(new { message = "Phone number was used." });
+            }
+
+            //檢查驗證碼對不對
+            if (_smsRepo.GetSmsModel(model.PhoneNumber).VerityCode != model.SmsCode)
+            {
+                return BadRequest(new { message = "SmsCode is wrong." });
             }
 
             var user = _userRepo.Register(model.Username, model.Email, model.Password);
@@ -72,11 +81,13 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Error while registering." });
             }
 
+            //補寄信流程
+
             return Ok();
         }
 
         [AllowAnonymous]
-        [HttpPost("signbygoogle")]
+        [HttpPost("SignByGoogle")]
         public async Task<IActionResult> RegisterAndLoginByThird([FromBody] AuthenticationThirdModel model)
         {
 
@@ -118,7 +129,7 @@ namespace Haikakin.Controllers
                 }
             }
 
-            //檢查有沒有使用信箱 沒信箱不給辦
+            //檢查有沒有使用信箱 沒信箱或名字不給辦
             if (userName == string.Empty || userEmail == string.Empty)
             {
                 return BadRequest(new { message = "Can't get name or email." });
@@ -140,16 +151,25 @@ namespace Haikakin.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("smsAuthenticate")]
-        public IActionResult SmsAuthenticate(string phoneNumber)
+        [HttpPost("SmsAuthenticate")]
+        public IActionResult SmsVerityCode(string phoneNumber)
         {
+            //檢查該手機號碼是否註冊過
+            if (_smsRepo.GetSmsModel(phoneNumber).IsUsed)
+            {
+                return BadRequest(new { message = "Number was used." });
+            }
+            //產生驗證用字串
+            var randomString = SmsRandomNumber.CreatedNumber();
+
+            //產出簡訊服務
             StringBuilder reqUrl = new StringBuilder();
-            reqUrl.Append("https://{三竹網域名稱}/b2c/mtk/SmSend?&CharsetURL=UTF-8");
+            reqUrl.Append("https://sms.mitake.com.tw/b2c/mtk/SmSend?&CharsetURL=UTF-8");
             StringBuilder smsParams = new StringBuilder();
             smsParams.Append($"username={_appSettings.SmsAccountID}");
             smsParams.Append($"&password={_appSettings.SmsAccountPassword}");
-            smsParams.Append("&dstaddr=0900000000");
-            smsParams.Append("&smbody=簡訊SmSend測試");
+            smsParams.Append($"&dstaddr={phoneNumber}");
+            smsParams.Append($"&smbody=Your Haikakin Web Services verification code is:{randomString}");
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new
             Uri(reqUrl.ToString()));
             request.Method = "POST";
@@ -157,9 +177,35 @@ namespace Haikakin.Controllers
             byte[] bs = Encoding.UTF8.GetBytes(smsParams.ToString());
             request.ContentLength = bs.Length;
             request.GetRequestStream().Write(bs, 0, bs.Length);
+            //接收回應
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             StreamReader sr = new StreamReader(response.GetResponseStream());
             string result = sr.ReadToEnd();
+            //如果有回應則分析回傳結果
+            if (result == null)
+            {
+                return BadRequest(new { message = "Sms send fail." });
+            }
+            //確認OK之後傳入DB裡面
+
+            //抓一下有沒有已存在的
+            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
+            if (smsModel == null)
+            {
+                //沒有就幫他建立一個新的
+                smsModel = new SmsModel
+                {
+                    PhoneNumber = phoneNumber,
+                    VerityCode = randomString,
+                };
+                _smsRepo.CreateSmsModel(smsModel);
+            }
+            else
+            {
+                //更新驗證碼
+                smsModel.VerityCode = randomString;
+                _smsRepo.UpdateSmsModel(smsModel);
+            }
 
             return Ok();
         }
@@ -244,5 +290,6 @@ namespace Haikakin.Controllers
 
             return true;
         }
+
     }
 }

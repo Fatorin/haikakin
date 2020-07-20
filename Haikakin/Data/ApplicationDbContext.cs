@@ -11,7 +11,7 @@ namespace Haikakin.Data
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
-            
+
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,5 +22,6 @@ namespace Haikakin.Data
         public DbSet<User> Users { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<SmsModel> SmsModels { get; set; }
     }
 }

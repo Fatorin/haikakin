@@ -10,6 +10,12 @@ namespace Haikakin.Models
     {
         [Key]
         public int Id { get; set; }
+        [Required]
         public string PhoneNumber { get; set; }
+        [Required]
+        public string VerityCode { get; set; }
+        public bool IsUsed { get; set; }
+        public DateTime VerityLimitTime { get; set; }
+
     }
 }
