@@ -59,7 +59,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(200, Type = typeof(OrderDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "VerifiedUser,Admin")]
         public IActionResult GetOrder(int orderId)
         {
             var obj = _orderRepo.GetOrder(orderId);
@@ -79,7 +79,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "VerifiedUser,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto orderDto)
         {
             if (orderDto == null)
@@ -147,7 +147,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(200, Type = typeof(OrderDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "VerifiedUser,Admin")]
         public IActionResult GetOrderInUser(int userId)
         {
             var objList = _orderRepo.GetOrdersInUser(userId);

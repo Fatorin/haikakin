@@ -198,13 +198,20 @@ namespace Haikakin.Controllers
                     PhoneNumber = phoneNumber,
                     VerityCode = randomString,
                 };
-                _smsRepo.CreateSmsModel(smsModel);
+
+                if (!_smsRepo.CreateSmsModel(smsModel))
+                {
+                    return BadRequest(new { message = "Create smsCode fail." });
+                }
             }
             else
             {
                 //更新驗證碼
                 smsModel.VerityCode = randomString;
-                _smsRepo.UpdateSmsModel(smsModel);
+                if (!_smsRepo.UpdateSmsModel(smsModel))
+                {
+                    return BadRequest(new { message = "Refresh smsCode fail." });
+                }
             }
 
             return Ok();
