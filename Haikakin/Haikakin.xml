@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Haikakin</name>
+    </assembly>
+    <members>
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrders">
+            <summary>
+            Get list on orders. For admin.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrder(System.Int32)">
+            <summary>
+            Get individual order
+            </summary>
+            <param name="orderId"> The id of the order</param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsController.GetProducts">
+            <summary>
+            Get list on products.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsController.GetProduct(System.Int32)">
+            <summary>
+            Get individual product
+            </summary>
+            <param name="productId"> The id of the product</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

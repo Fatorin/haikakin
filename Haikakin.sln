@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30104.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haikakin", "Haikakin\Haikakin.csproj", "{D5A1E481-F854-41F6-91F7-1256DB12E6BE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D5A1E481-F854-41F6-91F7-1256DB12E6BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5A1E481-F854-41F6-91F7-1256DB12E6BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5A1E481-F854-41F6-91F7-1256DB12E6BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5A1E481-F854-41F6-91F7-1256DB12E6BE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5C023A2D-457B-41E7-857B-85DC212A9A4E}
+	EndGlobalSection
+EndGlobal
