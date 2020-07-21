@@ -10,12 +10,12 @@ namespace Haikakin.Models.Dtos
     public class UserDto
     {
         public int Id { get; set; }
-        [Required]
         public string Username { get; set; }
         public string Password { get; set; }
         public string Email { get; set; }
         public bool EmailVerity { get; set; }
         public string PhoneNumber { get; set; }
+        public bool PhoneNumberVerity { get; set; }
         public string IPAddress { get; set; }
         public string Role { get; set; }
         public DateTime LastLoginTime { get; set; }

@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Haikakin.Migrations
 {
-    public partial class InitSmsDb : Migration
+    public partial class InitDB : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -13,6 +13,7 @@ namespace Haikakin.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     product_name = table.Column<string>(nullable: false),
                     price = table.Column<string>(nullable: false),
@@ -33,6 +34,7 @@ namespace Haikakin.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:IdentitySequenceOptions", "'40001000', '1', '', '', 'False', '1'")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     phone_number = table.Column<string>(nullable: false),
                     verity_code = table.Column<string>(nullable: false),
@@ -49,12 +51,14 @@ namespace Haikakin.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     username = table.Column<string>(nullable: false),
                     password = table.Column<string>(nullable: true),
                     email = table.Column<string>(nullable: true),
                     email_verity = table.Column<bool>(nullable: false),
                     phone_number = table.Column<string>(nullable: true),
+                    phone_number_verity = table.Column<bool>(nullable: false),
                     ip_address = table.Column<string>(nullable: true),
                     role = table.Column<string>(nullable: true),
                     last_login_time = table.Column<DateTime>(nullable: false),
@@ -72,6 +76,7 @@ namespace Haikakin.Migrations
                 columns: table => new
                 {
                     id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     order_time = table.Column<DateTime>(nullable: false),
                     order_status = table.Column<int>(nullable: false),

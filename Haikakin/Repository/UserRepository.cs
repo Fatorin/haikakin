@@ -119,7 +119,6 @@ namespace Haikakin.Repository
 
             _db.Users.Add(userObj);
             _db.SaveChanges();
-            userObj.Password = "";
             return userObj;
         }
 

@@ -92,12 +92,13 @@ namespace Haikakin.Controllers
 
             //修改sms的資料
             smsModel.IsUsed = true;
-            if (_smsRepo.UpdateSmsModel(smsModel))
+            if (!_smsRepo.UpdateSmsModel(smsModel))
             {
                 return BadRequest(new { message = "Unknown error." });
             };
 
             //補寄信流程
+            SendMail(user.Id.ToString(), user.Email);
 
             return Ok();
         }
@@ -170,23 +171,21 @@ namespace Haikakin.Controllers
         [HttpGet("EmailVerity")]
         public IActionResult CheckEmail(string uid, string email)
         {
-            var decryptUid = int.Parse(Encrypt.AesDecryptBase64(uid, _appSettings.EmailSecret));
-            var decryptEmail = Encrypt.AesDecryptBase64(email, _appSettings.EmailSecret);
+            var UidParse = int.Parse(uid);
 
-            var user = _userRepo.GetUser(decryptUid);
-
+            var user = _userRepo.GetUser(UidParse);
             if (user == null)
             {
                 return BadRequest(new { message = "Not found user." });
             }
 
-            if (user.Id != decryptUid || user.Email != decryptEmail)
+            if (user.Id != UidParse || user.Email != email)
             {
                 return BadRequest(new { message = "Not correct user." });
             }
 
             user.EmailVerity = true;
-            if (_userRepo.UpdateUser(user))
+            if (!_userRepo.UpdateUser(user))
             {
                 return BadRequest(new { message = "Unknown Error." });
             }
@@ -196,33 +195,23 @@ namespace Haikakin.Controllers
 
         private bool SendMail(string uId, string userEmail)
         {
-            var sendAdmin = "sksly789@gmail.com";
-            //https://localhost/api/?data=123456789&data2=123456789 範例網址
-            var id = Encrypt.AesDecryptBase64(uId, _appSettings.EmailSecret);
-            var email = Encrypt.AesDecryptBase64(userEmail, _appSettings.EmailSecret);
-            string url = $"";
-            string mailTitle = $"Haikakin 會員驗證信";
-            string mailBody = $"親愛的使用者，你的信箱驗證網址為: ${url} <br />";
+            var sendAdmin = "sksly1021@gmail.com";
+            var sendPw = "Ex@Fatorin*0721";
+            var mailUrl = $"https://localhost/api/?uid={uId}&email={userEmail}";
 
             try
             {
                 MailMessage msg = new MailMessage();
                 msg.To.Add(userEmail);
-                //msg.To.Add("b@b.com");可以發送給多人
-                //msg.CC.Add("c@c.com");
-                //msg.CC.Add("c@c.com");可以抄送副本給多人 
-                //這裡可以隨便填，不是很重要
                 msg.From = new MailAddress(sendAdmin, "Haikakin Service", Encoding.UTF8);
-                /* 上面3個參數分別是發件人地址（可以隨便寫），發件人姓名，編碼*/
-                msg.Subject = "測試標題";//郵件標題
+                msg.Subject = $"Haikakin 會員驗證信";
                 msg.SubjectEncoding = Encoding.UTF8;//郵件標題編碼
-                msg.Body = "測試一下"; //郵件內容
+                msg.Body = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
                 msg.BodyEncoding = Encoding.UTF8;//郵件內容編碼
-                msg.IsBodyHtml = true;//是否是HTML郵件 
-                                      //msg.Priority = MailPriority.High;//郵件優先級 
+                msg.IsBodyHtml = true;
 
                 SmtpClient client = new SmtpClient();
-                client.Credentials = new NetworkCredential(sendAdmin, "****"); //這裡要填正確的帳號跟密碼
+                client.Credentials = new NetworkCredential(sendAdmin, sendPw); //這裡要填正確的帳號跟密碼
                 client.Host = "smtp.gmail.com"; //設定smtp Server
                 client.Port = 25; //設定Port
                 client.EnableSsl = true; //gmail預設開啟驗證

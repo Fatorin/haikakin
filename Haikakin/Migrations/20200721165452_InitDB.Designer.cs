@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200720121916_InitDb")]
-    partial class InitDb
+    [Migration("20200721165452_InitDB")]
+    partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -27,7 +27,8 @@ namespace Haikakin.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id")
                         .HasColumnType("integer")
-                        .HasDefaultValue(20001000);
+                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int>("OrderPay")
                         .HasColumnName("order_pay")
@@ -64,7 +65,8 @@ namespace Haikakin.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id")
                         .HasColumnType("integer")
-                        .HasDefaultValue(30001000);
+                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool>("CanBuy")
                         .HasColumnName("can_buy")
@@ -112,7 +114,8 @@ namespace Haikakin.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id")
                         .HasColumnType("integer")
-                        .HasDefaultValue(40001000);
+                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'40001000', '1', '', '', 'False', '1'")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool>("IsUsed")
                         .HasColumnName("is_used")
@@ -144,7 +147,8 @@ namespace Haikakin.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id")
                         .HasColumnType("integer")
-                        .HasDefaultValue(10001000);
+                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<bool>("CheckBan")
                         .HasColumnName("check_ban")
@@ -181,6 +185,10 @@ namespace Haikakin.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnName("phone_number")
                         .HasColumnType("text");
+
+                    b.Property<bool>("PhoneNumberVerity")
+                        .HasColumnName("phone_number_verity")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Role")
                         .HasColumnName("role")
