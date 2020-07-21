@@ -80,7 +80,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "SmsCode is wrong." });
             }
 
-            var user = _userRepo.Register(model.Username, model.Email, model.Password);
+            var user = _userRepo.Register(model);
 
             if (user == null)
             {
@@ -94,6 +94,11 @@ namespace Haikakin.Controllers
             };
 
             //補寄信流程
+            //https://localhost/api/?data=123456789&data2=123456789 範例網址
+            var id = Encrypt.AesDecryptBase64(user.Id.ToString(), _appSettings.EmailSecret);
+            var email = Encrypt.AesDecryptBase64(user.Email, _appSettings.EmailSecret);
+            string url = $"";
+            string mailBody = $"親愛的使用者 {model.Username}，你的信箱驗證網址為: ${url}";
 
             return Ok();
         }
@@ -163,69 +168,26 @@ namespace Haikakin.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("SmsAuthenticate")]
-        public IActionResult SmsVerityCode(string phoneNumber)
+        [HttpGet("EmailVerity")]
+        public IActionResult CheckEmail(string uid, string email)
         {
-            //檢查該手機號碼是否註冊過
-            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
-            if (smsModel != null)
-            {
-                if (smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
-            }
-            //產生驗證用字串
-            var randomString = SmsRandomNumber.CreatedNumber();
+            var decryptUid = int.Parse(Encrypt.AesDecryptBase64(uid, _appSettings.EmailSecret));
+            var decryptEmail = Encrypt.AesDecryptBase64(email, _appSettings.EmailSecret);
 
-            //產出簡訊服務
-            StringBuilder reqUrl = new StringBuilder();
-            reqUrl.Append("https://sms.mitake.com.tw/b2c/mtk/SmSend?&CharsetURL=UTF-8");
-            StringBuilder smsParams = new StringBuilder();
-            smsParams.Append($"username={_appSettings.SmsAccountID}");
-            smsParams.Append($"&password={_appSettings.SmsAccountPassword}");
-            smsParams.Append($"&dstaddr={phoneNumber}");
-            smsParams.Append($"&smbody=Your Haikakin Web Services verification code is:{randomString}");
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new
-            Uri(reqUrl.ToString()));
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            byte[] bs = Encoding.UTF8.GetBytes(smsParams.ToString());
-            request.ContentLength = bs.Length;
-            request.GetRequestStream().Write(bs, 0, bs.Length);
-            //接收回應
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            StreamReader sr = new StreamReader(response.GetResponseStream());
-            string result = sr.ReadToEnd();
-            //如果有回應則分析回傳結果
-            if (result == null)
-            {
-                return BadRequest(new { message = "Sms send fail." });
-            }
-            //確認OK之後傳入DB裡面
+            var user = _userRepo.GetUser(decryptUid);
 
-            //抓一下有沒有已存在的
-            if (smsModel == null)
+            if (user == null)
             {
-                //沒有就幫他建立一個新的
-                smsModel = new SmsModel
-                {
-                    PhoneNumber = phoneNumber,
-                    VerityCode = randomString,
-                    VerityLimitTime = DateTime.UtcNow.AddDays(1)
-                };
+                return BadRequest(new { message = "Not found user." });
+            }
 
-                if (!_smsRepo.CreateSmsModel(smsModel))
-                {
-                    return BadRequest(new { message = "Create smsCode fail." });
-                }
-            }
-            else
+            if (user.Id != decryptUid || user.Email != decryptEmail)
             {
-                //更新驗證碼
-                smsModel.VerityCode = randomString;
-                if (!_smsRepo.UpdateSmsModel(smsModel))
-                {
-                    return BadRequest(new { message = "Refresh smsCode fail." });
-                }
+                return BadRequest(new { message = "Not correct user." });
             }
+
+            user.EmailVerity = true;
+            _userRepo.UpdateUser(user);
 
             return Ok();
         }

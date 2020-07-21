@@ -21,10 +21,10 @@ namespace Haikakin.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitUserSql);
-            modelBuilder.Entity<Order>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitOrderSql);
-            modelBuilder.Entity<Product>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitProductSql);
-            modelBuilder.Entity<SmsModel>().Property(u => u.Id).ValueGeneratedOnAdd().HasDefaultValue(InitSmsSql);
+            modelBuilder.Entity<User>().Property(u => u.Id).HasIdentityOptions(startValue: InitUserSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Order>().Property(u => u.Id).HasIdentityOptions(startValue: InitOrderSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Product>().Property(u => u.Id).HasIdentityOptions(startValue: InitProductSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<SmsModel>().Property(u => u.Id).HasIdentityOptions(startValue: InitSmsSql).ValueGeneratedOnAdd();
         }
 
         public DbSet<User> Users { get; set; }

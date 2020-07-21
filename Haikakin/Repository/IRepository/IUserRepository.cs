@@ -13,7 +13,10 @@ namespace Haikakin.Repository.IRepository
         bool IsUniqueUser(string email);
         User Authenticate(string email, string password, LoginTypeEnum lognType);
         User AuthenticateThird(string email, LoginTypeEnum lognType);
-        User Register(string username, string email, string password);
+        User Register(RegisterModel model);
         User RegisterThird(string username, string email, LoginTypeEnum loginType);
+        User GetUser(int id);
+        bool UpdateUser(User user);
+        bool Save();
     }
 }

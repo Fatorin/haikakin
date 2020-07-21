@@ -18,6 +18,7 @@ namespace Haikakin.Models
         public string Email { get; set; }
         public bool EmailVerity { get; set; }
         public string PhoneNumber { get; set; }
+        public bool PhoneNumberVerity { get; set; }
         public string IPAddress { get; set; }
         public string Role { get; set; }
         [NotMapped]

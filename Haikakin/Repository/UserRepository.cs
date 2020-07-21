@@ -32,7 +32,7 @@ namespace Haikakin.Repository
 
         public User Authenticate(string userEmail, string password, LoginTypeEnum loginType)
         {
-            var encryptPassword = Encrypt.HMACSHA256(password);
+            var encryptPassword = Encrypt.HMACSHA256(password, _appSettings.UserSecret);
 
             var user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
 
@@ -86,6 +86,11 @@ namespace Haikakin.Repository
             return user;
         }
 
+        public User GetUser(int id)
+        {
+            return _db.Users.SingleOrDefault(x => x.Id == id);
+        }
+
         public bool IsUniqueUser(string email)
         {
             var user = _db.Users.SingleOrDefault(x => x.Email == email);
@@ -95,16 +100,19 @@ namespace Haikakin.Repository
             return false;
         }
 
-        public User Register(string username, string email, string password)
+        public User Register(RegisterModel model)
         {
-            var encryptPassword = Encrypt.HMACSHA256(password);
+            var encryptPassword = Encrypt.HMACSHA256(model.Password, _appSettings.UserSecret);
 
             User userObj = new User()
             {
-                Username = username,
-                Email = email,
+                Username = model.Username,
+                Email = model.Email,
+                EmailVerity = false,
                 Password = encryptPassword,
                 Role = "User",
+                PhoneNumber = model.PhoneNumber,
+                PhoneNumberVerity = true,
                 CreateTime = DateTime.UtcNow,
                 LoginType = LoginTypeEnum.Normal,
             };
@@ -131,6 +139,17 @@ namespace Haikakin.Repository
             _db.SaveChanges();
 
             return userObj;
+        }
+
+        public bool Save()
+        {
+            return _db.SaveChanges() >= 0 ? true : false;
+        }
+
+        public bool UpdateUser(User user)
+        {
+            _db.Users.Update(user);
+            return Save();
         }
     }
 }
