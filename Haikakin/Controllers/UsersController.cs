@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using Twilio.TwiML.Voice;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -62,8 +64,8 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "User Email already exists." });
             }
 
+            //檢查驗證模組裡面有沒有對應的號碼
             var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
-            //檢查手機有沒有被使用過，理論上不會
             if (smsModel == null)
             {
                 return BadRequest(new { message = "Phone number not verification." });
@@ -80,6 +82,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "SmsCode is wrong." });
             }
 
+            //註冊寫入db
             var user = _userRepo.Register(model);
 
             if (user == null)
@@ -87,6 +90,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Error while registering." });
             }
 
+            //修改sms的資料
             smsModel.IsUsed = true;
             if (_smsRepo.UpdateSmsModel(smsModel))
             {
@@ -94,11 +98,6 @@ namespace Haikakin.Controllers
             };
 
             //補寄信流程
-            //https://localhost/api/?data=123456789&data2=123456789 範例網址
-            var id = Encrypt.AesDecryptBase64(user.Id.ToString(), _appSettings.EmailSecret);
-            var email = Encrypt.AesDecryptBase64(user.Email, _appSettings.EmailSecret);
-            string url = $"";
-            string mailBody = $"親愛的使用者 {model.Username}，你的信箱驗證網址為: ${url}";
 
             return Ok();
         }
@@ -187,9 +186,56 @@ namespace Haikakin.Controllers
             }
 
             user.EmailVerity = true;
-            _userRepo.UpdateUser(user);
+            if (_userRepo.UpdateUser(user))
+            {
+                return BadRequest(new { message = "Unknown Error." });
+            }
 
             return Ok();
+        }
+
+        private bool SendMail(string uId, string userEmail)
+        {
+            var sendAdmin = "sksly789@gmail.com";
+            //https://localhost/api/?data=123456789&data2=123456789 範例網址
+            var id = Encrypt.AesDecryptBase64(uId, _appSettings.EmailSecret);
+            var email = Encrypt.AesDecryptBase64(userEmail, _appSettings.EmailSecret);
+            string url = $"";
+            string mailTitle = $"Haikakin 會員驗證信";
+            string mailBody = $"親愛的使用者，你的信箱驗證網址為: ${url} <br />";
+
+            try
+            {
+                MailMessage msg = new MailMessage();
+                msg.To.Add(userEmail);
+                //msg.To.Add("b@b.com");可以發送給多人
+                //msg.CC.Add("c@c.com");
+                //msg.CC.Add("c@c.com");可以抄送副本給多人 
+                //這裡可以隨便填，不是很重要
+                msg.From = new MailAddress(sendAdmin, "Haikakin Service", Encoding.UTF8);
+                /* 上面3個參數分別是發件人地址（可以隨便寫），發件人姓名，編碼*/
+                msg.Subject = "測試標題";//郵件標題
+                msg.SubjectEncoding = Encoding.UTF8;//郵件標題編碼
+                msg.Body = "測試一下"; //郵件內容
+                msg.BodyEncoding = Encoding.UTF8;//郵件內容編碼
+                msg.IsBodyHtml = true;//是否是HTML郵件 
+                                      //msg.Priority = MailPriority.High;//郵件優先級 
+
+                SmtpClient client = new SmtpClient();
+                client.Credentials = new NetworkCredential(sendAdmin, "****"); //這裡要填正確的帳號跟密碼
+                client.Host = "smtp.gmail.com"; //設定smtp Server
+                client.Port = 25; //設定Port
+                client.EnableSsl = true; //gmail預設開啟驗證
+                client.Send(msg); //寄出信件
+                client.Dispose();
+                msg.Dispose();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
         }
 
         //FB登入支援，但沒在用
