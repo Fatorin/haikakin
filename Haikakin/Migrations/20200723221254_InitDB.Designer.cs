@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200723181716_initDB")]
-    partial class initDB
+    [Migration("20200723221254_InitDB")]
+    partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
