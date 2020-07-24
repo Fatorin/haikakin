@@ -20,6 +20,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
+using RestSharp;
+using RestSharp.Authenticators;
 using Twilio.TwiML.Voice;
 using static Haikakin.Models.User;
 
@@ -169,7 +171,7 @@ namespace Haikakin.Controllers
 
         [AllowAnonymous]
         [HttpGet("EmailVerity")]
-        public IActionResult CheckEmail(string uid, string email)
+        public IActionResult EmailVerity(string uid, string email)
         {
             var UidParse = int.Parse(uid);
 
@@ -193,38 +195,34 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
+        [AllowAnonymous]
+        [HttpGet("EmailChange")]
+        public IActionResult EmailChange(string email)
+        {
+            return BadRequest(new { message = "Working, not finish." }); ;
+        }
+
         private bool SendMail(string uId, string userEmail)
         {
-            var sendAdmin = "sksly1021@gmail.com";
-            var sendPw = "Ex@Fatorin*0721";
-            var mailUrl = $"https://localhost/api/?uid={uId}&email={userEmail}";
+            var titleText = "Haikakin 會員驗證信";
+            var mailUrl = $"https://localhost/emailcheck/?uid={uId}&email={userEmail}";
+            var titleBody = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
 
-            try
-            {
-                MailMessage msg = new MailMessage();
-                msg.To.Add(userEmail);
-                msg.From = new MailAddress(sendAdmin, "Haikakin Service", Encoding.UTF8);
-                msg.Subject = $"Haikakin 會員驗證信";
-                msg.SubjectEncoding = Encoding.UTF8;//郵件標題編碼
-                msg.Body = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
-                msg.BodyEncoding = Encoding.UTF8;//郵件內容編碼
-                msg.IsBodyHtml = true;
-
-                SmtpClient client = new SmtpClient();
-                client.Credentials = new NetworkCredential(sendAdmin, sendPw); //這裡要填正確的帳號跟密碼
-                client.Host = "smtp.gmail.com"; //設定smtp Server
-                client.Port = 25; //設定Port
-                client.EnableSsl = true; //gmail預設開啟驗證
-                client.Send(msg); //寄出信件
-                client.Dispose();
-                msg.Dispose();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
-
+            RestClient client = new RestClient();
+            client.BaseUrl = new Uri("https://api.mailgun.net/v3");
+            client.Authenticator =
+                new HttpBasicAuthenticator("api",
+                                            _appSettings.MailgunAPIKey);
+            RestRequest request = new RestRequest();
+            request.AddParameter("domain", "mail.haikakin.tw", ParameterType.UrlSegment);
+            request.Resource = "{domain}/messages";
+            request.AddParameter("from", "Haikakin Service <service@mail.haikakin.tw>");
+            request.AddParameter("to", $"{userEmail}");
+            request.AddParameter("subject", titleText);
+            request.AddParameter("text", titleBody);
+            request.Method = Method.POST;
+            var response = client.Execute(request);
+            return response.IsSuccessful;
         }
 
         //FB登入支援，但沒在用

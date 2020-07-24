@@ -22,6 +22,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Logging;
 
 namespace Haikakin
 {
@@ -124,7 +125,6 @@ namespace Haikakin
                 foreach (var desc in provider.ApiVersionDescriptions)
                     options.SwaggerEndpoint($"/swagger/{desc.GroupName}/swagger.json",
                     desc.GroupName.ToUpperInvariant());
-                options.RoutePrefix = "";
             });
 
             app.UseRouting();

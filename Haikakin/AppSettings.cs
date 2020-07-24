@@ -16,6 +16,7 @@ namespace Haikakin
         public string TwilioSmsAuthToken { get; set; }
         public string UserSecret { get; set; }
         public string EmailSecret { get; set; }
+        public string MailgunAPIKey { get; set; }
 
     }
 }
