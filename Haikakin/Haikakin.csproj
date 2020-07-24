@@ -6,6 +6,7 @@
     <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>warnings</Nullable>
+    <StartupObject>Haikakin.Program</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
