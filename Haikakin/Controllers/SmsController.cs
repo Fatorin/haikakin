@@ -55,6 +55,7 @@ namespace Haikakin.Controllers
             //如果有回應則分析回傳結果
             TwilioClient.Init(_appSettings.TwilioSmsAccountID, _appSettings.TwilioSmsAuthToken);
 
+
             var msg = MessageResource.Create(
                     body: $"Your Haikakin Web Services verification code is:{randomString}",
                     from: new Twilio.Types.PhoneNumber($"+12058138320"),

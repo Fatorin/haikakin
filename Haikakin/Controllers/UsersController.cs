@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Mail;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -34,13 +36,78 @@ namespace Haikakin.Controllers
     {
         private IUserRepository _userRepo;
         private ISmsRepository _smsRepo;
+        private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
 
-        public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
+        public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings, IMapper mapper)
         {
             _userRepo = userRepo;
             _smsRepo = smsRepo;
             _appSettings = appSettings.Value;
+            _mapper = mapper;
+        }
+
+        [Authorize(Roles = "User,Admin")]
+        [HttpGet("GetUser")]
+        public IActionResult GetUser(int userId)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new { message = "Bad token" });
+            }
+
+            //如果有不是管理者則自己身ID為主，此時傳值無效
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+            if (role != "Admin")
+            {
+                userId = int.Parse(identity.FindFirst(ClaimTypes.Role).Value);
+            }
+
+            var user = _userRepo.GetUser(userId);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.Password = "";
+
+            return Ok(user);
+        }
+
+        [Authorize(Roles = "User,Admin")]
+        [HttpGet("UpdateUser")]
+        public IActionResult UpdateUser(int userId, UserDto userDto)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new { message = "Bad token" });
+            }
+
+            //如果有不是管理者則自己身ID為主，此時傳值無效
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+            if (role != "Admin")
+            {
+                userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            }
+
+            if (userDto == null || userId != userDto.Id)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userObj = _mapper.Map<User>(userDto);
+
+            if (_userRepo.UpdateUser(userObj))
+            {
+                return StatusCode(500, ModelState);
+            }
+
+            return Ok();
         }
 
         [AllowAnonymous]
@@ -115,55 +182,36 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Not supported login." });
             }
 
-            var token = model.TokenId;
             var userName = "";
             var userEmail = "";
             //產生抓取應用程式Token
-            var url = "https://oauth2.googleapis.com";
-            var urlReq = $"tokeninfo?id_token={token}";
-            Console.WriteLine($"url={url}");
-            HttpClient client = new HttpClient() { BaseAddress = new Uri(url) };
-            //使用 async 方法從網路 url 上取得回應
-            using (HttpResponseMessage response = await client.GetAsync(urlReq))
-            using (HttpContent content = response.Content)
+
+            var payload = await GoogleJsonWebSignature.ValidateAsync(model.TokenId);
+            if (payload == null)
             {
-                string result = await content.ReadAsStringAsync();
-                if (result != null)
-                {
-                    var userObj = JObject.Parse(result);
-                    var msg = Convert.ToString(userObj["error"]);
-                    if (msg == "invalid_token")
-                    {
-                        return BadRequest(new { message = "Token has problem." });
-                    }
-                    else
-                    {
-                        userEmail = Convert.ToString(userObj["email"]);
-                        userName = Convert.ToString(userObj["name"]);
-                    }
-                }
-                else
-                {
-                    return BadRequest(new { message = "No response." });
-                }
+                return BadRequest(new { message = "Google valid fail." });
             }
+
+            userEmail = payload.Email;
+            userName = payload.Name;
 
             //檢查有沒有使用信箱 沒信箱或名字不給辦
             if (userName == string.Empty || userEmail == string.Empty)
             {
                 return BadRequest(new { message = "Can't get name or email." });
             }
+
             //檢查有無重複帳號
             if (_userRepo.IsUniqueUser(userEmail))
             {
-                //有重複帳號回傳JWT TOEKN
+                //創帳號 回傳TOKEN
+                _userRepo.RegisterThird(userName, userEmail, LoginTypeEnum.Google);
                 var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google);
                 return Ok(user);
             }
             else
             {
-                //創帳號 回傳TOKEN
-                _userRepo.RegisterThird(userName, userEmail, LoginTypeEnum.Google);
+                //有重複帳號回傳JWT TOEKN
                 var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google);
                 return Ok(user);
             }
@@ -205,7 +253,7 @@ namespace Haikakin.Controllers
         private bool SendMail(string uId, string userEmail)
         {
             var titleText = "Haikakin 會員驗證信";
-            var mailUrl = $"https://localhost/emailcheck/?uid={uId}&email={userEmail}";
+            var mailUrl = $"https://haikakin.com/emailcheck/?uid={uId}&email={userEmail}";
             var titleBody = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
 
             RestClient client = new RestClient();
@@ -214,9 +262,9 @@ namespace Haikakin.Controllers
                 new HttpBasicAuthenticator("api",
                                             _appSettings.MailgunAPIKey);
             RestRequest request = new RestRequest();
-            request.AddParameter("domain", "mail.haikakin.tw", ParameterType.UrlSegment);
+            request.AddParameter("domain", "mail.haikakin.com", ParameterType.UrlSegment);
             request.Resource = "{domain}/messages";
-            request.AddParameter("from", "Haikakin Service <service@mail.haikakin.tw>");
+            request.AddParameter("from", "Haikakin Service <service@mail.haikakin.com>");
             request.AddParameter("to", $"{userEmail}");
             request.AddParameter("subject", titleText);
             request.AddParameter("text", titleBody);

@@ -12,9 +12,8 @@ namespace Haikakin.Models.Dtos
         [Required]
         public string ProductName { get; set; }
         [Required]
-        public string Price { get; set; }
+        public double Price { get; set; }
         public bool CanBuy { get; set; }
-        public string Stock { get; set; }
         public byte[] Image { get; set; }
         public string Description { get; set; }
         public int Limit { get; set; }

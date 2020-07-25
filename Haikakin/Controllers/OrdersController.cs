@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Haikakin.Models;
@@ -59,7 +60,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(200, Type = typeof(OrderDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        [Authorize(Roles = "VerifiedUser,Admin")]
+        [Authorize(Roles = "User,Admin")]
         public IActionResult GetOrder(int orderId)
         {
             var obj = _orderRepo.GetOrder(orderId);
@@ -79,7 +80,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "VerifiedUser,Admin")]
+        [Authorize(Roles = "User,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto orderDto)
         {
             if (orderDto == null)
@@ -105,12 +106,31 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "User,Admin")]
         public IActionResult UpdateOrder(int orderId, [FromBody] OrderUpdateDto orderDto)
         {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new { message = "Bad token" });
+            }
+
             if (orderDto == null || orderId != orderDto.Id)
             {
                 return BadRequest(ModelState);
             }
-
+            //對應到相應的資料
             var orderObj = _mapper.Map<Order>(orderDto);
+
+            //如果有不是管理者則自己身ID為主，此時傳值無效
+            var userId = identity.FindFirst(ClaimTypes.Name).Value;
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+            if (role != "Admin")
+            {
+                if (orderObj.UserId != int.Parse(userId))
+                {
+                    return BadRequest(new { message = "Not current user." });
+                }
+            }
+
             if (!_orderRepo.UpdateOrder(orderObj))
             {
                 ModelState.AddModelError("", $"Something went wrong when updating the data {orderObj.Id}");
@@ -120,37 +140,23 @@ namespace Haikakin.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{orderId:int}", Name = "DeleteOrder")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "Admin")]
-        public IActionResult DeleteOrder(int orderId)
-        {
-            if (!_orderRepo.OrderExists(orderId))
-            {
-                return NotFound();
-            }
-
-            var orderObj = _orderRepo.GetOrder(orderId);
-            if (!_orderRepo.DeleteOrder(orderObj))
-            {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {orderObj.Id}");
-                return StatusCode(500, ModelState);
-            }
-
-            return NoContent();
-        }
-
-        [HttpGet("[action]/{userId:int}")]
+        [HttpGet("GetOrderInUser")]
         [ProducesResponseType(200, Type = typeof(OrderDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        [Authorize(Roles = "VerifiedUser,Admin")]
-        public IActionResult GetOrderInUser(int userId)
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult GetOrderInUser()
         {
-            var objList = _orderRepo.GetOrdersInUser(userId);
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new { message = "Bad token" });
+            }
+
+            var userId = identity.FindFirst(ClaimTypes.Name).Value;
+
+            var objList = _orderRepo.GetOrdersInUser(int.Parse(userId));
 
             if (objList == null)
             {
@@ -162,7 +168,6 @@ namespace Haikakin.Controllers
             {
                 objDto.Add(_mapper.Map<OrderDto>(obj));
             }
-
 
             return Ok(objDto);
         }

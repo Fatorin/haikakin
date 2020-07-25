@@ -23,8 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Models\Dtos\UserUpdateDto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Migrations\20200723221254_InitDB.cs" />
     <Compile Include="Migrations\20200723221254_InitDB.Designer.cs" />
+    <Compile Include="Migrations\20200725043338_UpdateProduct.cs" />
+    <Compile Include="Migrations\20200725043338_UpdateProduct.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 
@@ -43,12 +49,19 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.8" />
-    <PackageReference Include="Npgsql" Version="4.1.3.1" />
+    <PackageReference Include="Npgsql" Version="4.1.4" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="3.1.4" />
     <PackageReference Include="RestSharp" Version="106.11.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
-    <PackageReference Include="Twilio" Version="5.45.0" />
+    <PackageReference Include="Twilio" Version="5.45.1" />
     <PackageReference Include="Twilio.AspNet.Core" Version="5.33.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ECPay.Payment.Integration">
+      <HintPath>..\..\..\Desktop\ECPayAIO_Net-master\ECPay.Payment.Integration.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

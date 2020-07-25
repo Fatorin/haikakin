@@ -16,6 +16,7 @@ namespace Haikakin.HaikakinMapper
             CreateMap<User, UserDto>().ReverseMap();
             CreateMap<Order, OrderDto>().ReverseMap();
             CreateMap<Order, OrderCreateDto>().ReverseMap();
+            CreateMap<Product, ProductDto>().ReverseMap();
         }
     }
 }
