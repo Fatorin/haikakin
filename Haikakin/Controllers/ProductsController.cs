@@ -73,28 +73,6 @@ namespace Haikakin.Controllers
             return Ok(objDto);
         }
 
-        /***
-         * 上傳檔案的範例
-         * 
-        [HttpPost("TestProduct")]
-        [ProducesResponseType(201, Type = typeof(ProductDto))]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Consumes("multipart/form-data")]
-        [AllowAnonymous]
-        public IActionResult TestProduct([FromForm]TestModel model)
-        {
-            return Ok(new
-            {
-                title = model.Title,
-                date = model.Date.ToString("yyyy/MM/dd"),
-                photoCount = model.Photos.Count,
-                photoSize = model.Photos.Sum(f => f.Length)
-            });
-        }
-        */
-
         [HttpPost("CreateProduct")]
         [ProducesResponseType(201, Type = typeof(ProductDto))]
         [ProducesResponseType(StatusCodes.Status201Created)]
