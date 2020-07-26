@@ -1,0 +1,54 @@
+﻿using Haikakin.Data;
+using Haikakin.Models;
+using Haikakin.Repository.IRepository;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace Haikakin.Repository
+{
+    public class OrderInfoRepository : IOrderInfoRepository
+    {
+        private readonly ApplicationDbContext _db;
+
+        public OrderInfoRepository(ApplicationDbContext db)
+        {
+            _db = db;
+        }
+
+        public bool CreateOrderInfo(OrderInfo orderInfo)
+        {
+            //減少庫存並新增訂單詳細資訊
+            var productId = orderInfo.ProductId;
+            var product = _db.Products.FirstOrDefault(u => u.Id == productId);
+            product.Stock -= orderInfo.Count;
+            _db.OrderInfos.Add(orderInfo);
+            _db.Products.Update(product);
+            return Save();
+        }
+
+        public bool UpdateOrderInfo(OrderInfo orderInfo)
+        {
+            _db.OrderInfos.Update(orderInfo);
+            return Save();
+        }
+
+        public ICollection<OrderInfo> GetOrderInfosByOrderId(int orderId)
+        {
+            return _db.OrderInfos.Include(o => o.OrderId).Where(o => o.OrderId == orderId).ToList();
+        }
+
+        public bool OrderInfoExists(int id)
+        {
+            bool value = _db.OrderInfos.Any(u => u.Id == id);
+            return value;
+        }
+
+        public bool Save()
+        {
+            return _db.SaveChanges() >= 0 ? true : false;
+        }
+    }
+}

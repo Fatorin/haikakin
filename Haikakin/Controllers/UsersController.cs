@@ -62,7 +62,7 @@ namespace Haikakin.Controllers
             var role = identity.FindFirst(ClaimTypes.Role).Value;
             if (role != "Admin")
             {
-                userId = int.Parse(identity.FindFirst(ClaimTypes.Role).Value);
+                userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             }
 
             var user = _userRepo.GetUser(userId);
@@ -81,6 +81,7 @@ namespace Haikakin.Controllers
         [HttpGet("UpdateUser")]
         public IActionResult UpdateUser(int userId, UserDto userDto)
         {
+
             var identity = HttpContext.User.Identity as ClaimsIdentity;
 
             if (identity == null)

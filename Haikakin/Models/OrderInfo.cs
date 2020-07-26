@@ -10,7 +10,6 @@ namespace Haikakin.Models
     public class OrderInfo
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         public DateTime OrderTime { get; set; }
@@ -20,13 +19,12 @@ namespace Haikakin.Models
         [Required]
         public int ProductId { get; set; }
 
+
         [ForeignKey("ProductId")]
         public Product Product { get; set; }
 
         [Required]
-        public int OrderId { get; set; }
-
         [ForeignKey("OrderId")]
-        public Order Order { get; set; }
+        public int OrderId { get; set; }
     }
 }

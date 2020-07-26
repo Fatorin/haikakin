@@ -13,15 +13,15 @@ namespace Haikakin.Repository.IRepository
 
         ICollection<Order> GetOrdersInUser(int userId);
 
-        Order GetOrder(int OrderId);
+        Order GetOrder(int orderId);
 
         bool OrderExists(int id);
 
-        bool CreateOrder(Order Order);
+        int CreateOrder(Order order);
 
-        bool UpdateOrder(Order Order);
+        bool UpdateOrder(Order order);
 
-        bool DeleteOrder(Order Order);
+        bool DeleteOrder(Order order);
 
         bool Save();
     }

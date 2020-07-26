@@ -59,6 +59,7 @@ namespace Haikakin
             .UseSnakeCaseNamingConvention());
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IOrderInfoRepository, OrderInfoRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<ISmsRepository, SmsRepository>();
             services.AddAutoMapper(typeof(HaikakinMappings));

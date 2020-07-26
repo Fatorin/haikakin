@@ -3,15 +3,17 @@ using System;
 using Haikakin.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200726094533_UpdateProductDB")]
+    partial class UpdateProductDB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -32,9 +34,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_pay")
                         .HasColumnType("integer");
 
-                    b.Property<double>("OrderPrice")
+                    b.Property<int>("OrderPrice")
                         .HasColumnName("order_price")
-                        .HasColumnType("double precision");
+                        .HasColumnType("integer");
 
                     b.Property<int>("OrderStatus")
                         .HasColumnName("order_status")
@@ -51,41 +53,10 @@ namespace Haikakin.Migrations
                     b.HasKey("Id")
                         .HasName("pk_orders");
 
+                    b.HasIndex("UserId")
+                        .HasName("ix_orders_user_id");
+
                     b.ToTable("orders");
-                });
-
-            modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'50001000', '1', '', '', 'False', '1'")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.Property<int>("Count")
-                        .HasColumnName("count")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnName("order_id")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("OrderTime")
-                        .HasColumnName("order_time")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnName("product_id")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id")
-                        .HasName("pk_order_infos");
-
-                    b.HasIndex("ProductId")
-                        .HasName("ix_order_infos_product_id");
-
-                    b.ToTable("order_infos");
                 });
 
             modelBuilder.Entity("Haikakin.Models.Product", b =>
@@ -124,10 +95,6 @@ namespace Haikakin.Migrations
                     b.Property<int>("Limit")
                         .HasColumnName("limit")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("LimitPayTime")
-                        .HasColumnName("limit_pay_time")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double>("Price")
                         .HasColumnName("price")
@@ -245,12 +212,12 @@ namespace Haikakin.Migrations
                     b.ToTable("users");
                 });
 
-            modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
+            modelBuilder.Entity("Haikakin.Models.Order", b =>
                 {
-                    b.HasOne("Haikakin.Models.Product", "Product")
+                    b.HasOne("Haikakin.Models.User", "User")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .HasConstraintName("fk_order_infos_products_product_id")
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_orders_users_user_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

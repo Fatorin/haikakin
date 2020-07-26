@@ -31,6 +31,12 @@
     <Compile Include="Migrations\20200723221254_InitDB.Designer.cs" />
     <Compile Include="Migrations\20200725043338_UpdateProduct.cs" />
     <Compile Include="Migrations\20200725043338_UpdateProduct.Designer.cs" />
+    <Compile Include="Migrations\20200726094533_UpdateProductDB.cs" />
+    <Compile Include="Migrations\20200726094533_UpdateProductDB.Designer.cs" />
+    <Compile Include="Migrations\20200726154535_CreateOrderInfoDb.cs" />
+    <Compile Include="Migrations\20200726154535_CreateOrderInfoDb.Designer.cs" />
+    <Compile Include="Migrations\20200726160511_AdjustDb.cs" />
+    <Compile Include="Migrations\20200726160511_AdjustDb.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 

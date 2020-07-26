@@ -3,15 +3,17 @@ using System;
 using Haikakin.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200726154535_CreateOrderInfoDb")]
+    partial class CreateOrderInfoDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,6 +53,9 @@ namespace Haikakin.Migrations
                     b.HasKey("Id")
                         .HasName("pk_orders");
 
+                    b.HasIndex("UserId")
+                        .HasName("ix_orders_user_id");
+
                     b.ToTable("orders");
                 });
 
@@ -81,6 +86,9 @@ namespace Haikakin.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_order_infos");
+
+                    b.HasIndex("OrderId")
+                        .HasName("ix_order_infos_order_id");
 
                     b.HasIndex("ProductId")
                         .HasName("ix_order_infos_product_id");
@@ -245,8 +253,25 @@ namespace Haikakin.Migrations
                     b.ToTable("users");
                 });
 
+            modelBuilder.Entity("Haikakin.Models.Order", b =>
+                {
+                    b.HasOne("Haikakin.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .HasConstraintName("fk_orders_users_user_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
                 {
+                    b.HasOne("Haikakin.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .HasConstraintName("fk_order_infos_orders_order_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Haikakin.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")

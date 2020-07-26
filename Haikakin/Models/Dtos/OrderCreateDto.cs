@@ -10,16 +10,7 @@ namespace Haikakin.Models.Dtos
 {
     public class OrderCreateDto
     {
-        public DateTime OrderTime { get; set; }
-        [Required]
-        public OrderStatusType OrderStatus { get; set; }
-        [Required]
-        public int OrderPrice { get; set; }
-
-        public OrderPayType OrderPay { get; set; }
-        [Required]
-        public int UserId { get; set; }
-
-        public UserDto User { get; set; }
+        public int ProductId { get; set; }
+        public int OrderCount { get; set; }
     }
 }

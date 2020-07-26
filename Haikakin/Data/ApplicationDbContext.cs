@@ -13,6 +13,7 @@ namespace Haikakin.Data
         const int InitOrderSql = 20001000;
         const int InitProductSql = 30001000;
         const int InitSmsSql = 40001000;
+        const int InitOrderInfoSql = 50001000;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -25,10 +26,12 @@ namespace Haikakin.Data
             modelBuilder.Entity<Order>().Property(u => u.Id).HasIdentityOptions(startValue: InitOrderSql).ValueGeneratedOnAdd();
             modelBuilder.Entity<Product>().Property(u => u.Id).HasIdentityOptions(startValue: InitProductSql).ValueGeneratedOnAdd();
             modelBuilder.Entity<SmsModel>().Property(u => u.Id).HasIdentityOptions(startValue: InitSmsSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<OrderInfo>().Property(u => u.Id).HasIdentityOptions(startValue: InitOrderInfoSql).ValueGeneratedOnAdd();
         }
 
         public DbSet<User> Users { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderInfo> OrderInfos { get; set; }
         public DbSet<Product> Products { get; set; }
         public DbSet<SmsModel> SmsModels { get; set; }
     }

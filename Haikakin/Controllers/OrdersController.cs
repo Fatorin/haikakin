@@ -10,23 +10,26 @@ using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static Haikakin.Models.Order;
 
 namespace Haikakin.Controllers
 {
     [Authorize]
     [Route("api/v{version:apiVersion}/Orders")]
-    //[Route("api/[controller]")]
     [ApiController]
-    //[ApiExplorerSettings(GroupName = "HaikakinAPISpecOrder")]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
+        private IOrderInfoRepository _orderInfoRepo;
+        private IProductRepository _productRepo;
         private readonly IMapper _mapper;
 
-        public OrdersController(IOrderRepository orderRepo, IMapper mapper)
+        public OrdersController(IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IMapper mapper)
         {
             _orderRepo = orderRepo;
+            _orderInfoRepo = orderInfoRepo;
+            _productRepo = productRepo;
             _mapper = mapper;
         }
 
@@ -81,22 +84,81 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "User,Admin")]
-        public IActionResult CreateOrder([FromBody] OrderCreateDto orderDto)
+        public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos, int payWay)
         {
-            if (orderDto == null)
+            //設定初值與使用者Token確認
+            var price = 0.0;
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity == null)
+            {
+                return BadRequest(new { message = "Bad token" });
+            }
+            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            //沒收到資料代表請求失敗
+            if (orderDtos == null)
             {
                 return BadRequest(ModelState);
             }
-
-            var orderObj = _mapper.Map<Order>(orderDto);
-
-            if (!_orderRepo.CreateOrder(orderObj))
+            //依序檢查商品剩餘數量並計算總價錢
+            foreach (OrderCreateDto dto in orderDtos)
             {
-                ModelState.AddModelError("", $"Something went wrong when save the data {orderObj.Id}");
-                return StatusCode(500, ModelState);
+                //檢查是否有該商品
+                if (!_productRepo.ProductExists(dto.ProductId))
+                {
+                    //商品不存在
+                    return BadRequest(new { message = "不存在的商品" });
+                }
+                //不能買
+                var product = _productRepo.GetProduct(dto.ProductId);
+                if (!product.CanBuy)
+                {
+                    return BadRequest(new { message = "無法購買的商品" });
+                }
+                //超過購買限制
+                if (product.Limit != 0)
+                {
+                    return BadRequest(new { message = "超過數量購買限制" });
+                }
+
+                //商品數量錯誤
+                if (dto.OrderCount == 0)
+                {
+                    return BadRequest(new { message = "購買數量為0" });
+                }
+                //數量超過庫存
+                if (dto.OrderCount > product.Stock)
+                {
+                    return BadRequest(new { message = "庫存不足" });
+                }
+
+                price += (product.Price) * dto.OrderCount;
             }
 
-            return CreatedAtRoute("GetOrder", new { version = HttpContext.GetRequestedApiVersion().ToString(), orderId = orderObj.Id }, orderObj);
+            //依序將商品加入訂單
+            var order = new Order()
+            {
+                OrderTime = DateTime.UtcNow,
+                OrderPrice = price,
+                OrderPay = OrderPayType.None,
+                OrderStatus = OrderStatusType.NonPayment,
+                UserId = userId
+            };
+
+            var orderId = _orderRepo.CreateOrder(order);
+            //產生訂單物件
+            foreach (OrderCreateDto dto in orderDtos)
+            {
+                OrderInfo orderInfo = new OrderInfo()
+                {
+                    ProductId = dto.ProductId,
+                    OrderId = orderId,
+                    Count = dto.OrderCount,
+                    OrderTime = DateTime.UtcNow,
+                };
+                _orderInfoRepo.CreateOrderInfo(orderInfo);
+            }
+
+            return Ok();
         }
 
         [HttpPatch("{orderId:int}", Name = "UpdateOrder")]
