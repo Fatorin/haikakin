@@ -21,6 +21,9 @@ namespace Haikakin.Repository
         public bool CreateProductInfo(ProductInfo productInfo)
         {
             _db.ProductInfos.Add(productInfo);
+            var product = _db.Products.FirstOrDefault(u => u.ProductId == productInfo.ProductId);
+            product.Stock += 1;
+            _db.Products.Update(product);
             return Save();
         }
 

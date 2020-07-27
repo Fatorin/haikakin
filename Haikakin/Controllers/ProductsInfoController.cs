@@ -20,12 +20,10 @@ namespace Haikakin.Controllers
     public class ProductsInfoController : ControllerBase
     {
         private IProductInfoRepository _productInfoRepo;
-        private readonly IMapper _mapper;
 
-        public ProductsInfoController(IProductInfoRepository productInfoRepo, IMapper mapper)
+        public ProductsInfoController(IProductInfoRepository productInfoRepo)
         {
             _productInfoRepo = productInfoRepo;
-            _mapper = mapper;
         }
 
         [HttpGet("GetProductInfos")]
@@ -41,6 +39,10 @@ namespace Haikakin.Controllers
         public IActionResult GetProductInfo(int productInfoId)
         {
             var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+            if (productInfo == null)
+            {
+                return BadRequest(new { message = "不存在的ID" });
+            }
             return Ok();
         }
 
@@ -55,6 +57,20 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult UpdateProductInfo(int productInfoId, string serial)
         {
+            var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+            
+            if (productInfo == null)
+            {
+                return BadRequest(new { message = "不存在的ID" });
+            }
+
+            productInfo.Serial = serial;
+
+            if (!_productInfoRepo.UpdateProductInfo(productInfo))
+            {
+                return BadRequest(new { message = "更新失敗，系統錯誤" });
+            }
+
             return NoContent();
         }
     }
