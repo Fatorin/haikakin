@@ -168,7 +168,7 @@ namespace Haikakin.Controllers
             };
 
             //補寄信流程
-            SendMail(user.Id.ToString(), user.Email);
+            SendMail(user.UserId.ToString(), user.Email);
 
             return Ok();
         }
@@ -230,7 +230,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Not found user." });
             }
 
-            if (user.Id != UidParse || user.Email != email)
+            if (user.UserId != UidParse || user.Email != email)
             {
                 return BadRequest(new { message = "Not correct user." });
             }

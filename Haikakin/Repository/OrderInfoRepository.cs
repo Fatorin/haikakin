@@ -22,7 +22,7 @@ namespace Haikakin.Repository
         {
             //減少庫存並新增訂單詳細資訊
             var productId = orderInfo.ProductId;
-            var product = _db.Products.FirstOrDefault(u => u.Id == productId);
+            var product = _db.Products.FirstOrDefault(u => u.ProductId == productId);
             product.Stock -= orderInfo.Count;
             _db.OrderInfos.Add(orderInfo);
             _db.Products.Update(product);
@@ -42,7 +42,7 @@ namespace Haikakin.Repository
 
         public bool OrderInfoExists(int id)
         {
-            bool value = _db.OrderInfos.Any(u => u.Id == id);
+            bool value = _db.OrderInfos.Any(u => u.OrderInfoId == id);
             return value;
         }
 

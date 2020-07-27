@@ -20,7 +20,7 @@ namespace Haikakin.Repository
 
         public ICollection<SmsModel> GetSmsModels()
         {
-            return _db.SmsModels.OrderBy(u => u.Id).ToList();
+            return _db.SmsModels.OrderBy(u => u.SmsId).ToList();
         }
         public SmsModel GetSmsModel(string phoneNumber)
         {

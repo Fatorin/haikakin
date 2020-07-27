@@ -32,17 +32,17 @@ namespace Haikakin.Repository
 
         public Product GetProduct(int ProductId)
         {
-            return _db.Products.FirstOrDefault(u => u.Id == ProductId);
+            return _db.Products.FirstOrDefault(u => u.ProductId == ProductId);
         }
 
         public ICollection<Product> GetProducts()
         {
-            return _db.Products.OrderBy(u => u.Id).ToList();
+            return _db.Products.OrderBy(u => u.ProductId).ToList();
         }
 
         public bool ProductExists(int id)
         {
-            bool value = _db.Products.Any(u => u.Id == id);
+            bool value = _db.Products.Any(u => u.ProductId == id);
             return value;
         }
 

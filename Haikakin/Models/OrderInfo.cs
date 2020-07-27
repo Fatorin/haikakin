@@ -10,7 +10,7 @@ namespace Haikakin.Models
     public class OrderInfo
     {
         [Key]
-        public int Id { get; set; }
+        public int OrderInfoId { get; set; }
 
         public DateTime OrderTime { get; set; }
 

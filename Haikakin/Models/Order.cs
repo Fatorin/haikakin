@@ -10,7 +10,7 @@ namespace Haikakin.Models
     public class Order
     {
         [Key]
-        public int Id { get; set; }
+        public int OrderId { get; set; }
         public DateTime OrderTime { get; set; }
         public enum OrderStatusType { NonPayment, AlreadyPaid, Over }
         [Required]

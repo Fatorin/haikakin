@@ -195,7 +195,7 @@ namespace Haikakin.Controllers
 
             if (!_orderRepo.UpdateOrder(orderObj))
             {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {orderObj.Id}");
+                ModelState.AddModelError("", $"Something went wrong when updating the data {orderObj.OrderId}");
                 return StatusCode(500, ModelState);
             }
 

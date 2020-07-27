@@ -30,5 +30,20 @@
             <param name="productId"> The id of the product</param>
             <returns></returns>
         </member>
+        <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">
+            流水號
+        </member>
+        <member name="P:Haikakin.Models.ProductInfo.Serial">
+            序號(須加密)
+        </member>
+        <member name="P:Haikakin.Models.ProductInfo.LastUpdateTime">
+            流水號
+        </member>
+        <member name="T:Haikakin.Models.ProductInfo.ProductStatusEnum">
+            已使用、已鎖定、已使用
+        </member>
+        <member name="P:Haikakin.Models.ProductInfo.OrderInfoId">
+            對應的訂單編號
+        </member>
     </members>
 </doc>

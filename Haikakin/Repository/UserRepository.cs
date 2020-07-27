@@ -46,7 +46,7 @@ namespace Haikakin.Repository
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name,user.Id.ToString()),
+                    new Claim(ClaimTypes.Name,user.UserId.ToString()),
                     new Claim(ClaimTypes.Role,user.Role),
                     new Claim(ClaimTypes.Email,user.Email)
                 }),
@@ -75,7 +75,7 @@ namespace Haikakin.Repository
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name,user.Id.ToString()),
+                    new Claim(ClaimTypes.Name,user.UserId.ToString()),
                     new Claim(ClaimTypes.Role,user.Role.ToString())
                 }),
                 Expires = DateTime.UtcNow.AddDays(7),
@@ -91,7 +91,7 @@ namespace Haikakin.Repository
 
         public User GetUser(int id)
         {
-            return _db.Users.SingleOrDefault(x => x.Id == id);
+            return _db.Users.SingleOrDefault(x => x.UserId == id);
         }
 
         public bool IsUniqueUser(string email)

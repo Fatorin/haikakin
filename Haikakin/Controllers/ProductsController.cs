@@ -90,11 +90,11 @@ namespace Haikakin.Controllers
 
             if (!_productRepo.CreateProduct(productObj))
             {
-                ModelState.AddModelError("", $"Something went wrong when save the data {productObj.Id}");
+                ModelState.AddModelError("", $"Something went wrong when save the data {productObj.ProductId}");
                 return StatusCode(500, ModelState);
             }
 
-            return CreatedAtRoute("GetProduct", new { version = HttpContext.GetRequestedApiVersion().ToString(), productId = productObj.Id }, productObj);
+            return CreatedAtRoute("GetProduct", new { version = HttpContext.GetRequestedApiVersion().ToString(), productId = productObj.ProductId }, productObj);
         }
 
         [HttpPatch("{productId:int}", Name = "UpdateProduct")]
@@ -112,7 +112,7 @@ namespace Haikakin.Controllers
             var productObj = _mapper.Map<Product>(productDto);
             if (!_productRepo.UpdateProduct(productObj))
             {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.Id}");
+                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.ProductId}");
                 return StatusCode(500, ModelState);
             }
 
@@ -135,7 +135,7 @@ namespace Haikakin.Controllers
             var productObj = _productRepo.GetProduct(productId);
             if (!_productRepo.DeleteProduct(productObj))
             {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.Id}");
+                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.ProductId}");
                 return StatusCode(500, ModelState);
             }
 

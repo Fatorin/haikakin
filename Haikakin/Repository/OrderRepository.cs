@@ -22,7 +22,7 @@ namespace Haikakin.Repository
         {
             var db =_db.Orders.Add(order);
             _db.SaveChanges();
-            return db.Entity.Id;
+            return db.Entity.OrderId;
         }
 
         public bool DeleteOrder(Order order)
@@ -33,12 +33,12 @@ namespace Haikakin.Repository
 
         public Order GetOrder(int OrderId)
         {
-            return _db.Orders.FirstOrDefault(o => o.Id == OrderId);
+            return _db.Orders.FirstOrDefault(o => o.OrderId == OrderId);
         }
 
         public ICollection<Order> GetOrders()
         {
-            return _db.Orders.OrderBy(u => u.Id).ToList();
+            return _db.Orders.OrderBy(u => u.OrderId).ToList();
         }
 
         public ICollection<Order> GetOrdersInUser(int userId)
@@ -48,7 +48,7 @@ namespace Haikakin.Repository
 
         public bool OrderExists(int id)
         {
-            bool value = _db.Orders.Any(u => u.Id == id);
+            bool value = _db.Orders.Any(u => u.OrderId == id);
             return value;
         }
 

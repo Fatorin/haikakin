@@ -9,7 +9,7 @@ namespace Haikakin.Models
     public class SmsModel
     {
         [Key]
-        public int Id { get; set; }
+        public int SmsId { get; set; }
         [Required]
         public string PhoneNumber { get; set; }
         [Required]

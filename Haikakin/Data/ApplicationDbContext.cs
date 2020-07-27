@@ -22,11 +22,11 @@ namespace Haikakin.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<User>().Property(u => u.Id).HasIdentityOptions(startValue: InitUserSql).ValueGeneratedOnAdd();
-            modelBuilder.Entity<Order>().Property(u => u.Id).HasIdentityOptions(startValue: InitOrderSql).ValueGeneratedOnAdd();
-            modelBuilder.Entity<Product>().Property(u => u.Id).HasIdentityOptions(startValue: InitProductSql).ValueGeneratedOnAdd();
-            modelBuilder.Entity<SmsModel>().Property(u => u.Id).HasIdentityOptions(startValue: InitSmsSql).ValueGeneratedOnAdd();
-            modelBuilder.Entity<OrderInfo>().Property(u => u.Id).HasIdentityOptions(startValue: InitOrderInfoSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<User>().Property(u => u.UserId).HasIdentityOptions(startValue: InitUserSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Order>().Property(u => u.OrderId).HasIdentityOptions(startValue: InitOrderSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Product>().Property(u => u.ProductId).HasIdentityOptions(startValue: InitProductSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<SmsModel>().Property(u => u.SmsId).HasIdentityOptions(startValue: InitSmsSql).ValueGeneratedOnAdd();
+            modelBuilder.Entity<OrderInfo>().Property(u => u.OrderInfoId).HasIdentityOptions(startValue: InitOrderInfoSql).ValueGeneratedOnAdd();
         }
 
         public DbSet<User> Users { get; set; }
