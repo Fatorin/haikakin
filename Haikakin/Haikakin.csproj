@@ -7,6 +7,7 @@
 	<GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>warnings</Nullable>
     <StartupObject>Haikakin.Program</StartupObject>
+	<IncludeOpenAPIAnalyzers>true</IncludeOpenAPIAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -27,16 +28,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20200723221254_InitDB.cs" />
-    <Compile Include="Migrations\20200723221254_InitDB.Designer.cs" />
-    <Compile Include="Migrations\20200725043338_UpdateProduct.cs" />
-    <Compile Include="Migrations\20200725043338_UpdateProduct.Designer.cs" />
-    <Compile Include="Migrations\20200726094533_UpdateProductDB.cs" />
-    <Compile Include="Migrations\20200726094533_UpdateProductDB.Designer.cs" />
-    <Compile Include="Migrations\20200726154535_CreateOrderInfoDb.cs" />
-    <Compile Include="Migrations\20200726154535_CreateOrderInfoDb.Designer.cs" />
-    <Compile Include="Migrations\20200726160511_AdjustDb.cs" />
-    <Compile Include="Migrations\20200726160511_AdjustDb.Designer.cs" />
+    <Compile Include="Migrations\20200727051541_initDB.cs" />
+    <Compile Include="Migrations\20200727051541_initDB.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 
@@ -50,6 +43,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="4.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="4.1.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

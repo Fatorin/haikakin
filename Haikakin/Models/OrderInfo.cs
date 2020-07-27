@@ -17,11 +17,8 @@ namespace Haikakin.Models
         public int Count { get; set; }
 
         [Required]
-        public int ProductId { get; set; }
-
-
         [ForeignKey("ProductId")]
-        public Product Product { get; set; }
+        public int ProductId { get; set; }
 
         [Required]
         [ForeignKey("OrderId")]

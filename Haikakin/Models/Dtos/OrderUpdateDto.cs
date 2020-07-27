@@ -10,12 +10,12 @@ namespace Haikakin.Models.Dtos
 {
     public class OrderUpdateDto
     {
-        public int Id { get; set; }
+        public int OrderId { get; set; }
         public DateTime OrderTime { get; set; }
         [Required]
         public OrderStatusType OrderStatus { get; set; }
         [Required]
-        public int OrderPrice { get; set; }
+        public int OrderPaySerial { get; set; }
 
         public OrderPayType OrderPay { get; set; }
         [Required]

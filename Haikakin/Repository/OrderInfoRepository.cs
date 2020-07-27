@@ -26,6 +26,14 @@ namespace Haikakin.Repository
             product.Stock -= orderInfo.Count;
             _db.OrderInfos.Add(orderInfo);
             _db.Products.Update(product);
+
+            var productInfos = _db.ProductInfos.Where(p => p.ProductInfoId == orderInfo.ProductId).ToList().Take(orderInfo.Count);
+            foreach(ProductInfo productInfo in productInfos)
+            {
+                productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Lock;
+                productInfo.LastUpdateTime = DateTime.UtcNow;
+                _db.ProductInfos.Update(productInfo);
+            }
             return Save();
         }
 

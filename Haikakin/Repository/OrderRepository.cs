@@ -57,9 +57,9 @@ namespace Haikakin.Repository
             return _db.SaveChanges() >= 0 ? true : false;
         }
 
-        public bool UpdateOrder(Order Order)
+        public bool UpdateOrder(Order order)
         {
-            _db.Orders.Update(Order);
+            _db.Orders.Update(order);
             return Save();
         }
     }

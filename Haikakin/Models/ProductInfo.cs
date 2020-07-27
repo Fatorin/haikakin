@@ -17,8 +17,10 @@ namespace Haikakin.Models
         public DateTime LastUpdateTime { get; set; }
         /**已使用、已鎖定、已使用*/
         public enum ProductStatusEnum { NotUse, Lock, Used }
+        public ProductStatusEnum ProductStatus { get; set; }
         /**對應的訂單編號*/
-        [ForeignKey("OrderInfoId")]
         public int OrderInfoId { get; set; }
+        [ForeignKey("OrderInfoId")]
+        public OrderInfo OrderInfo { get; set; }
     }
 }

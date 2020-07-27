@@ -104,7 +104,7 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult UpdateProduct(int productId, [FromBody] ProductDto productDto)
         {
-            if (productDto == null || productId != productDto.Id)
+            if (productDto == null || productId != productDto.ProductId)
             {
                 return BadRequest(ModelState);
             }

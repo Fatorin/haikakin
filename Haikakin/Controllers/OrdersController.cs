@@ -80,8 +80,10 @@ namespace Haikakin.Controllers
 
         [HttpPost]
         [ProducesResponseType(201, Type = typeof(OrderDto))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "User,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos, int payWay)
@@ -134,6 +136,8 @@ namespace Haikakin.Controllers
                 price += (product.Price) * dto.OrderCount;
             }
 
+            //產生訂單需求
+
             //依序將商品加入訂單
             var order = new Order()
             {
@@ -141,6 +145,7 @@ namespace Haikakin.Controllers
                 OrderPrice = price,
                 OrderPay = OrderPayType.None,
                 OrderStatus = OrderStatusType.NonPayment,
+                OrderPaySerial = 0,
                 UserId = userId
             };
 
@@ -163,7 +168,7 @@ namespace Haikakin.Controllers
 
         [HttpPatch("{orderId:int}", Name = "UpdateOrder")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "User,Admin")]
         public IActionResult UpdateOrder(int orderId, [FromBody] OrderUpdateDto orderDto)
@@ -175,7 +180,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Bad token" });
             }
 
-            if (orderDto == null || orderId != orderDto.Id)
+            if (orderDto == null || orderId != orderDto.OrderId)
             {
                 return BadRequest(ModelState);
             }
@@ -189,9 +194,15 @@ namespace Haikakin.Controllers
             {
                 if (orderObj.UserId != int.Parse(userId))
                 {
-                    return BadRequest(new { message = "Not current user." });
+                    return BadRequest(new { message = "這不是你的訂單" });
                 }
             }
+
+            if (_orderRepo.GetOrder(orderId).OrderStatus == OrderStatusType.AlreadyPaid)
+            {
+                return BadRequest(new { message = "訂單已結束無法更改" });
+            }
+            //檢查金流資訊
 
             if (!_orderRepo.UpdateOrder(orderObj))
             {

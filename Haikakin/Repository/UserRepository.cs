@@ -89,11 +89,6 @@ namespace Haikakin.Repository
             return user;
         }
 
-        public User GetUser(int id)
-        {
-            return _db.Users.SingleOrDefault(x => x.UserId == id);
-        }
-
         public bool IsUniqueUser(string email)
         {
             var user = _db.Users.SingleOrDefault(x => x.Email == email);
@@ -143,15 +138,20 @@ namespace Haikakin.Repository
             return userObj;
         }
 
-        public bool Save()
+        public User GetUser(int id)
         {
-            return _db.SaveChanges() >= 0 ? true : false;
+            return _db.Users.SingleOrDefault(x => x.UserId == id);
         }
 
         public bool UpdateUser(User user)
         {
             _db.Users.Update(user);
             return Save();
+        }
+
+        public bool Save()
+        {
+            return _db.SaveChanges() >= 0 ? true : false;
         }
     }
 }

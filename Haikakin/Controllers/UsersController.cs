@@ -96,7 +96,7 @@ namespace Haikakin.Controllers
                 userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             }
 
-            if (userDto == null || userId != userDto.Id)
+            if (userDto == null || userId != userDto.UserId)
             {
                 return BadRequest(ModelState);
             }

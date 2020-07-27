@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200726160511_AdjustDb")]
-    partial class AdjustDb
+    [Migration("20200727051541_initDB")]
+    partial class initDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -23,15 +23,19 @@ namespace Haikakin.Migrations
 
             modelBuilder.Entity("Haikakin.Models.Order", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("OrderId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
+                        .HasColumnName("order_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
                     b.Property<int>("OrderPay")
                         .HasColumnName("order_pay")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrderPaySerial")
+                        .HasColumnName("order_pay_serial")
                         .HasColumnType("integer");
 
                     b.Property<double>("OrderPrice")
@@ -50,7 +54,7 @@ namespace Haikakin.Migrations
                         .HasColumnName("user_id")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id")
+                    b.HasKey("OrderId")
                         .HasName("pk_orders");
 
                     b.ToTable("orders");
@@ -58,9 +62,9 @@ namespace Haikakin.Migrations
 
             modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("OrderInfoId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
+                        .HasColumnName("order_info_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'50001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
@@ -81,20 +85,20 @@ namespace Haikakin.Migrations
                         .HasColumnName("product_id")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id")
+                    b.HasKey("OrderInfoId")
                         .HasName("pk_order_infos");
 
-                    b.HasIndex("ProductId")
-                        .HasName("ix_order_infos_product_id");
+                    b.HasIndex("OrderId")
+                        .HasName("ix_order_infos_order_id");
 
                     b.ToTable("order_infos");
                 });
 
             modelBuilder.Entity("Haikakin.Models.Product", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("ProductId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
+                        .HasColumnName("product_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
@@ -144,17 +148,47 @@ namespace Haikakin.Migrations
                         .HasColumnName("stock")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id")
+                    b.HasKey("ProductId")
                         .HasName("pk_products");
 
                     b.ToTable("products");
                 });
 
+            modelBuilder.Entity("Haikakin.Models.ProductInfo", b =>
+                {
+                    b.Property<int>("ProductInfoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnName("product_info_id")
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:IdentitySequenceOptions", "'60001000', '1', '', '', 'False', '1'")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<DateTime>("LastUpdateTime")
+                        .HasColumnName("last_update_time")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("OrderInfoId")
+                        .HasColumnName("order_info_id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Serial")
+                        .HasColumnName("serial")
+                        .HasColumnType("text");
+
+                    b.HasKey("ProductInfoId")
+                        .HasName("pk_product_infos");
+
+                    b.HasIndex("OrderInfoId")
+                        .HasName("ix_product_infos_order_info_id");
+
+                    b.ToTable("product_infos");
+                });
+
             modelBuilder.Entity("Haikakin.Models.SmsModel", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("SmsId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
+                        .HasColumnName("sms_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'40001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
@@ -177,7 +211,7 @@ namespace Haikakin.Migrations
                         .HasColumnName("verity_limit_time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.HasKey("Id")
+                    b.HasKey("SmsId")
                         .HasName("pk_sms_models");
 
                     b.ToTable("sms_models");
@@ -185,9 +219,9 @@ namespace Haikakin.Migrations
 
             modelBuilder.Entity("Haikakin.Models.User", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnName("id")
+                        .HasColumnName("user_id")
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
@@ -241,7 +275,7 @@ namespace Haikakin.Migrations
                         .HasColumnName("username")
                         .HasColumnType("text");
 
-                    b.HasKey("Id")
+                    b.HasKey("UserId")
                         .HasName("pk_users");
 
                     b.ToTable("users");
@@ -249,10 +283,20 @@ namespace Haikakin.Migrations
 
             modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
                 {
-                    b.HasOne("Haikakin.Models.Product", "Product")
+                    b.HasOne("Haikakin.Models.Order", null)
+                        .WithMany("OrderInfos")
+                        .HasForeignKey("OrderId")
+                        .HasConstraintName("fk_order_infos_orders_order_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Haikakin.Models.ProductInfo", b =>
+                {
+                    b.HasOne("Haikakin.Models.OrderInfo", "OrderInfo")
                         .WithMany()
-                        .HasForeignKey("ProductId")
-                        .HasConstraintName("fk_order_infos_products_product_id")
+                        .HasForeignKey("OrderInfoId")
+                        .HasConstraintName("fk_product_infos_order_infos_order_info_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
