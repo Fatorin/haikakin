@@ -27,11 +27,13 @@ namespace Haikakin.Repository
             _db.OrderInfos.Add(orderInfo);
             _db.Products.Update(product);
 
+            //抓指定可用的數量訂購
             var productInfos = _db.ProductInfos.Where(p => p.ProductInfoId == orderInfo.ProductId).ToList().Take(orderInfo.Count);
             foreach(ProductInfo productInfo in productInfos)
             {
                 productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Lock;
                 productInfo.LastUpdateTime = DateTime.UtcNow;
+                productInfo.OrderInfoId = orderInfo.OrderInfoId;
                 _db.ProductInfos.Update(productInfo);
             }
             return Save();

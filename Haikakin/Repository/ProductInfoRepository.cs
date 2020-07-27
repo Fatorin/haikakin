@@ -30,9 +30,9 @@ namespace Haikakin.Repository
             return Save();
         }
 
-        public ProductInfo GetProductInfo(int productId)
+        public ProductInfo GetProductInfo(int productInfoId)
         {
-            return _db.ProductInfos.SingleOrDefault(p => p.ProductInfoId == productId);
+            return _db.ProductInfos.SingleOrDefault(p => p.ProductInfoId == productInfoId);
         }
 
         public ICollection<ProductInfo> GetProductInfos()

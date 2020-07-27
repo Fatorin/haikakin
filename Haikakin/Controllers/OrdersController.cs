@@ -23,13 +23,15 @@ namespace Haikakin.Controllers
         private IOrderRepository _orderRepo;
         private IOrderInfoRepository _orderInfoRepo;
         private IProductRepository _productRepo;
+        private IProductInfoRepository _productInfoRepo;
         private readonly IMapper _mapper;
 
-        public OrdersController(IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IMapper mapper)
+        public OrdersController(IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper)
         {
             _orderRepo = orderRepo;
             _orderInfoRepo = orderInfoRepo;
             _productRepo = productRepo;
+            _productInfoRepo = productInfoRepo;
             _mapper = mapper;
         }
 
@@ -203,6 +205,25 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "訂單已結束無法更改" });
             }
             //檢查金流資訊
+
+            var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(orderObj.OrderId);
+            /*if (!_orderInfoRepo.UpdateOrderInfos(orderInfos))
+            {
+                return BadRequest(new { message = "訂單資料更新錯誤" });
+            }*/
+            //模擬完成結帳
+            //var orderCheckStatus = OrderStatusType.Over;
+            var productInfoStatus = ProductInfo.ProductStatusEnum.Used;
+
+            foreach (OrderInfo orderInfo in orderInfos)
+            {
+                foreach (ProductInfo productInfo in orderInfo.ProductInfos)
+                {
+                    //訂單改成鎖定
+                    productInfo.ProductStatus = productInfoStatus;
+                    _productInfoRepo.UpdateProductInfo(productInfo);
+                }
+            }
 
             if (!_orderRepo.UpdateOrder(orderObj))
             {
