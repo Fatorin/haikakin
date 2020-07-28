@@ -6,28 +6,147 @@
     <members>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrders">
             <summary>
-            Get list on orders. For admin.
+            獲得所有訂單，只有Admin可用
             </summary>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrder(System.Int32)">
             <summary>
-            Get individual order
+            查詢指定訂單，User只可以查自己的，Admin不限制
             </summary>
             <param name="orderId"> The id of the order</param>
             <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.OrdersController.CreateOrder(Haikakin.Models.Dtos.OrderCreateDto[])">
+            <summary>
+            建立訂單
+            </summary>
+            <param name="orderDtos"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(System.Int32,Haikakin.Models.Dtos.OrderUpdateDto)">
+            <summary>
+            更新指定訂單，暫時還有問題
+            </summary>
+            <param name="orderId"></param>
+            <param name="orderDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.CancelOrder(System.Int32)">
+            <summary>
+            取消訂單
+            </summary>
+            <param name="orderId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrderInUser">
+            <summary>
+            獲得當前用戶的所有訂單
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.ProductsController.GetProducts">
             <summary>
-            Get list on products.
+            獲得全部商品資訊
             </summary>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.ProductsController.GetProduct(System.Int32)">
             <summary>
-            Get individual product
+            獲得指定商品資訊
             </summary>
             <param name="productId"> The id of the product</param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsController.CreateProduct(Haikakin.Models.Dtos.ProductUpsertDto)">
+            <summary>
+            建立指定商品，管理員才可使用
+            </summary>
+            <param name="productDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsController.UpdateProduct(Haikakin.Models.Dtos.ProductUpsertDto)">
+            <summary>
+            更新指定商品，管理員才可使用
+            </summary>
+            <param name="productDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsInfoController.GetProductInfos">
+            <summary>
+            獲得全部產品序號，Admin限定
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsInfoController.GetProductInfo(System.Int32)">
+            <summary>
+            獲得單一產品序號，Admin限定
+            </summary>
+            <param name="productInfoId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsInfoController.CreateProductInfo(Haikakin.Models.ProductInfoFile)">
+            <summary>
+            上傳產品序號用表單上傳，Admin限定
+            </summary>
+            <param name="productInfoFile"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsInfoController.UpdateProductInfoSerial(System.Int32,System.String)">
+            <summary>
+            更新特定產品序號，Admin限定
+            </summary>
+            <param name="productInfoId"></param>
+            <param name="serial"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(System.String)">
+            <summary>
+            簡訊驗證手機
+            </summary>
+            <param name="phoneNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.GetUser(System.Int32)">
+            <summary>
+            要求指定用戶資料
+            </summary>
+            <param name="userId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.UpdateUser(Haikakin.Models.Dtos.UserUpdateDto)">
+            <summary>
+            更新用戶資料
+            </summary>
+            <param name="userDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.Authenticate(Haikakin.Models.AuthenticationModel)">
+             <summary>
+            驗證身份並獲得Token
+             </summary>
+             <param name="model"></param>
+             <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.Register(Haikakin.Models.RegisterModel)">
+            <summary>
+            註冊會員
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.RegisterAndLoginByThird(Haikakin.Models.AuthenticationThirdModel)">
+            <summary>
+            註冊會員(Google)
+            </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.EmailVerity(Haikakin.Models.EmailVerityModel)">
+            <summary>
+            信箱驗證含信箱修改
+            </summary>
+            <param name="model"></param>
             <returns></returns>
         </member>
         <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">

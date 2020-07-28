@@ -39,6 +39,11 @@ namespace Haikakin.Controllers
             _appSettings = appSettings.Value;
         }
 
+        /// <summary>
+        /// 簡訊驗證手機
+        /// </summary>
+        /// <param name="phoneNumber"></param>
+        /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("SmsAuthenticate")]
         public IActionResult SmsVerityCode(string phoneNumber)

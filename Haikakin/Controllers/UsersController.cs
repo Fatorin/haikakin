@@ -47,7 +47,13 @@ namespace Haikakin.Controllers
             _mapper = mapper;
         }
 
+        /// <summary>
+        /// 要求指定用戶資料
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpGet("GetUser")]
         public IActionResult GetUser(int userId)
         {
@@ -77,11 +83,16 @@ namespace Haikakin.Controllers
             return Ok(user);
         }
 
+        /// <summary>
+        /// 更新用戶資料
+        /// </summary>
+        /// <param name="userDto"></param>
+        /// <returns></returns>
         [Authorize(Roles = "User,Admin")]
-        [HttpGet("UpdateUser")]
-        public IActionResult UpdateUser(int userId, UserDto userDto)
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [HttpPost("UpdateUser")]
+        public IActionResult UpdateUser(UserUpdateDto userDto)
         {
-
             var identity = HttpContext.User.Identity as ClaimsIdentity;
 
             if (identity == null)
@@ -89,16 +100,16 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "Bad token" });
             }
 
+            if (userDto == null)
+            {
+                return BadRequest(ModelState);
+            }
+
             //如果有不是管理者則自己身ID為主，此時傳值無效
             var role = identity.FindFirst(ClaimTypes.Role).Value;
             if (role != "Admin")
             {
-                userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
-            }
-
-            if (userDto == null || userId != userDto.UserId)
-            {
-                return BadRequest(ModelState);
+                userDto.UserId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             }
 
             var userObj = _mapper.Map<User>(userDto);
@@ -111,11 +122,24 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
+        /// <summary>
+        ///驗證身份並獲得Token
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost("Authenticate")]
         public IActionResult Authenticate([FromBody] AuthenticationModel model)
         {
-            var user = _userRepo.Authenticate(model.Email, model.Password, LoginTypeEnum.Normal);
+            if (model == null)
+            {
+                return BadRequest(new { message = "傳值錯誤" });
+            }
+
+            var user = _userRepo.Authenticate(model.Email, model.PhoneNumber, model.Password, LoginTypeEnum.Normal);
+
             if (user == null)
             {
                 return BadRequest(new { message = "UserEmail or Password is incorrect" });
@@ -124,7 +148,14 @@ namespace Haikakin.Controllers
             return Ok(user);
         }
 
+        /// <summary>
+        /// 註冊會員
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost("Register")]
         public IActionResult Register([FromBody] RegisterModel model)
         {
@@ -173,10 +204,21 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// 註冊會員(Google)
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost("SignByGoogle")]
         public async Task<IActionResult> RegisterAndLoginByThird([FromBody] AuthenticationThirdModel model)
         {
+            if (model == null)
+            {
+                return BadRequest(new { message = "沒有接收到資料" });
+            }
 
             if (model.LoginType != LoginTypeEnum.Google)
             {
@@ -187,7 +229,7 @@ namespace Haikakin.Controllers
             var userEmail = "";
             //產生抓取應用程式Token
 
-            var payload = await GoogleJsonWebSignature.ValidateAsync(model.TokenId);
+            var payload = await GoogleJsonWebSignature.ValidateAsync(model.TokenId).ConfigureAwait(true);
             if (payload == null)
             {
                 return BadRequest(new { message = "Google valid fail." });
@@ -197,7 +239,7 @@ namespace Haikakin.Controllers
             userName = payload.Name;
 
             //檢查有沒有使用信箱 沒信箱或名字不給辦
-            if (userName == string.Empty || userEmail == string.Empty)
+            if (string.IsNullOrEmpty(userName)|| string.IsNullOrEmpty(userEmail))
             {
                 return BadRequest(new { message = "Can't get name or email." });
             }
@@ -218,37 +260,64 @@ namespace Haikakin.Controllers
             }
         }
 
+        /// <summary>
+        /// 信箱驗證含信箱修改
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet("EmailVerity")]
-        public IActionResult EmailVerity(string uid, string email)
+        public IActionResult EmailVerity([FromBody] EmailVerityModel model)
         {
-            var UidParse = int.Parse(uid);
+            if (model == null)
+            {
+                return BadRequest(new { message = "沒有接收到資料" });
+            }
 
-            var user = _userRepo.GetUser(UidParse);
+            var user = _userRepo.GetUser(model.userId);
+            if (user.EmailVerity == true)
+            {
+                return BadRequest(new { message = "Has verified" });
+            }
+
             if (user == null)
             {
                 return BadRequest(new { message = "Not found user." });
             }
 
-            if (user.UserId != UidParse || user.Email != email)
+            if (user.UserId != model.userId || user.Email != model.userEmail)
             {
                 return BadRequest(new { message = "Not correct user." });
             }
 
-            user.EmailVerity = true;
-            if (!_userRepo.UpdateUser(user))
+            //如果是要驗證
+            if (model.emailVerityAction == EmailVerityModel.EmailVerityAction.EmailVerity)
             {
-                return BadRequest(new { message = "Unknown Error." });
+                user.EmailVerity = true;
+                if (!_userRepo.UpdateUser(user))
+                {
+                    return BadRequest(new { message = "Unknown Error." });
+                }
+
+                return Ok();
             }
 
-            return Ok();
-        }
+            //如果是要驗證
+            if (model.emailVerityAction == EmailVerityModel.EmailVerityAction.EmailModify)
+            {
+                user.Email = model.userEmail;
+                user.EmailVerity = true;
+                if (!_userRepo.UpdateUser(user))
+                {
+                    return BadRequest(new { message = "Unknown Error." });
+                }
 
-        [AllowAnonymous]
-        [HttpGet("EmailChange")]
-        public IActionResult EmailChange(string email)
-        {
-            return BadRequest(new { message = "Working, not finish." }); ;
+                return Ok();
+            }
+
+            return BadRequest(new { message = "Unknown Error." });
         }
 
         private bool SendMail(string uId, string userEmail)

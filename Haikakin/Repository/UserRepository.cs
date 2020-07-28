@@ -30,11 +30,20 @@ namespace Haikakin.Repository
         }
 
 
-        public User Authenticate(string userEmail, string password, LoginTypeEnum loginType)
+        public User Authenticate(string userEmail, string userPhone, string password, LoginTypeEnum loginType)
         {
             var encryptPassword = Encrypt.HMACSHA256(password, _appSettings.UserSecret);
 
-            var user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
+            User user = null;
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
+            }
+
+            if (string.IsNullOrEmpty(userPhone))
+            {
+                user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
+            }
 
             if (user == null)
             {

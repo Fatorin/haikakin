@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Haikakin.Models.Order;
 
 namespace Haikakin.Repository
 {
@@ -21,7 +22,7 @@ namespace Haikakin.Repository
         public bool CreateProductInfo(ProductInfo productInfo)
         {
             _db.ProductInfos.Add(productInfo);
-            var product = _db.Products.FirstOrDefault(u => u.ProductId == productInfo.ProductId);
+            var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
             product.Stock += 1;
             _db.Products.Update(product);
             return Save();
@@ -29,7 +30,17 @@ namespace Haikakin.Repository
 
         public bool UpdateProductInfo(ProductInfo productInfo)
         {
+            if (productInfo == null) return false;
+
             _db.ProductInfos.Update(productInfo);
+            if (productInfo.ProductStatus == ProductInfo.ProductStatusEnum.NotUse)
+            {
+                //更新庫存
+                var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
+                product.Stock += 1;
+                _db.Products.Update(product);
+            }
+
             return Save();
         }
 
@@ -46,6 +57,12 @@ namespace Haikakin.Repository
         public bool ProductInfoExists(int id)
         {
             bool value = _db.ProductInfos.Any(u => u.ProductInfoId == id);
+            return value;
+        }
+
+        public bool ProductInfoSerialExists(string serial)
+        {
+            bool value = _db.ProductInfos.Any(u => u.Serial == serial);
             return value;
         }
 

@@ -24,16 +24,20 @@ namespace Haikakin.Repository
             var productId = orderInfo.ProductId;
             var product = _db.Products.FirstOrDefault(u => u.ProductId == productId);
             product.Stock -= orderInfo.Count;
-            _db.OrderInfos.Add(orderInfo);
+            //取得OrderInfoID用
+            var temp = _db.OrderInfos.Add(orderInfo);
             _db.Products.Update(product);
-
+            _db.SaveChanges();
+            //取得OrderInfoID用
+            var orderInfoId = temp.Entity.OrderInfoId;
             //抓指定可用的數量訂購
-            var productInfos = _db.ProductInfos.Where(p => p.ProductInfoId == orderInfo.ProductId).ToList().Take(orderInfo.Count);
-            foreach(ProductInfo productInfo in productInfos)
+            var productInfos = _db.ProductInfos.Where(p => p.ProductId == orderInfo.ProductId).Where(p => p.ProductStatus == ProductInfo.ProductStatusEnum.NotUse).ToList().Take(orderInfo.Count);
+            foreach (ProductInfo productInfo in productInfos)
             {
                 productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Lock;
                 productInfo.LastUpdateTime = DateTime.UtcNow;
-                productInfo.OrderInfoId = orderInfo.OrderInfoId;
+                productInfo.OrderInfoId = orderInfoId;
+                productInfo.ProductId = productId;
                 _db.ProductInfos.Update(productInfo);
             }
             return Save();

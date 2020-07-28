@@ -11,8 +11,9 @@ namespace Haikakin.Models
     {
         [Key]
         public int OrderId { get; set; }
-        public DateTime OrderTime { get; set; }
-        public enum OrderStatusType { NonPayment, AlreadyPaid, Over }
+        public DateTime OrderCreateTime { get; set; }
+        public DateTime OrderLastUpdateTime { get; set; }
+        public enum OrderStatusType { NonPayment, AlreadyPaid, Over, Cancel }
         [Required]
         public OrderStatusType OrderStatus { get; set; }
         [Required]
@@ -24,6 +25,6 @@ namespace Haikakin.Models
         [Required]
         [ForeignKey("UserId")]
         public int UserId { get; set; }
-        public ICollection<OrderInfo> OrderInfos { get;set; }
+        public ICollection<OrderInfo> OrderInfos { get; set; }
     }
 }

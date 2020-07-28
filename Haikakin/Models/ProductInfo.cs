@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Haikakin.Models
@@ -19,7 +20,7 @@ namespace Haikakin.Models
         public enum ProductStatusEnum { NotUse, Lock, Used }
         public ProductStatusEnum ProductStatus { get; set; }
         /**對應的訂單編號*/
-        public int OrderInfoId { get; set; }
+        public int? OrderInfoId { get; set; }
         [ForeignKey("OrderInfoId")]
         public OrderInfo OrderInfo { get; set; }
 

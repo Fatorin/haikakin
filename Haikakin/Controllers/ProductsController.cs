@@ -10,6 +10,7 @@ using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Twilio.TwiML.Messaging;
 
 namespace Haikakin.Controllers
 {
@@ -29,7 +30,7 @@ namespace Haikakin.Controllers
         }
 
         /// <summary>
-        /// Get list on products.
+        /// 獲得全部商品資訊
         /// </summary>
         /// <returns></returns>
         [AllowAnonymous]
@@ -50,7 +51,7 @@ namespace Haikakin.Controllers
         }
 
         /// <summary>
-        /// Get individual product
+        /// 獲得指定商品資訊
         /// </summary>
         /// <param name="productId"> The id of the product</param>
         /// <returns></returns>
@@ -65,7 +66,7 @@ namespace Haikakin.Controllers
 
             if (obj == null)
             {
-                return NotFound();
+                return NotFound(new { message = "不存在的商品" });
             }
 
             var objDto = _mapper.Map<ProductDto>(obj);
@@ -73,17 +74,23 @@ namespace Haikakin.Controllers
             return Ok(objDto);
         }
 
+        /// <summary>
+        /// 建立指定商品，管理員才可使用
+        /// </summary>
+        /// <param name="productDto"></param>
+        /// <returns></returns>
         [HttpPost("CreateProduct")]
         [ProducesResponseType(201, Type = typeof(ProductDto))]
         [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin")]
-        public IActionResult CreateProduct(ProductDto productDto)
+        public IActionResult CreateProduct(ProductUpsertDto productDto)
         {
             if (productDto == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "請求錯誤" });
             }
 
             var productObj = _mapper.Map<Product>(productDto);
@@ -97,45 +104,34 @@ namespace Haikakin.Controllers
             return CreatedAtRoute("GetProduct", new { version = HttpContext.GetRequestedApiVersion().ToString(), productId = productObj.ProductId }, productObj);
         }
 
-        [HttpPatch("{productId:int}", Name = "UpdateProduct")]
+        /// <summary>
+        /// 更新指定商品，管理員才可使用
+        /// </summary>
+        /// <param name="productDto"></param>
+        /// <returns></returns>
+        [HttpPatch("UpdateProduct")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin")]
-        public IActionResult UpdateProduct(int productId, [FromBody] ProductDto productDto)
+        public IActionResult UpdateProduct([FromBody] ProductUpsertDto productDto)
         {
-            if (productDto == null || productId != productDto.ProductId)
+            if (productDto == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { message = "請求錯誤" });
             }
 
             var productObj = _mapper.Map<Product>(productDto);
+
+            if (!_productRepo.ProductExists(productObj.ProductId))
+            {
+                return NotFound(new { message = "不存在的商品" });
+            }
+
             if (!_productRepo.UpdateProduct(productObj))
             {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.ProductId}");
-                return StatusCode(500, ModelState);
-            }
-
-            return NoContent();
-        }
-
-        [HttpDelete("{productId:int}", Name = "DeleteProduct")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "Admin")]
-        public IActionResult DeleteProduct(int productId)
-        {
-            if (!_productRepo.ProductExists(productId))
-            {
-                return NotFound();
-            }
-
-            var productObj = _productRepo.GetProduct(productId);
-            if (!_productRepo.DeleteProduct(productObj))
-            {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {productObj.ProductId}");
+                ModelState.AddModelError("", $"商品名稱錯誤 {productObj.ProductId}");
                 return StatusCode(500, ModelState);
             }
 

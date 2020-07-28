@@ -23,6 +23,7 @@ using System.Text;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Logging;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace Haikakin
 {
@@ -54,15 +55,20 @@ namespace Haikakin
             services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
             services.AddCors();
+
             services.AddDbContext<ApplicationDbContext>(options => options
             .UseNpgsql(Configuration.GetConnectionString("DefaultConnection"))
             .UseSnakeCaseNamingConvention());
+
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IOrderInfoRepository, OrderInfoRepository>();
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IProductInfoRepository, ProductInfoRepository>();
             services.AddScoped<ISmsRepository, SmsRepository>();
+
             services.AddAutoMapper(typeof(HaikakinMappings));
+
             services.AddApiVersioning(options =>
             {
                 options.AssumeDefaultVersionWhenUnspecified = true;
@@ -98,7 +104,10 @@ namespace Haikakin
                     ValidateAudience = false
                 };
             });
-
+            services.Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 10485760;
+            });
             services.AddControllers();
         }
 

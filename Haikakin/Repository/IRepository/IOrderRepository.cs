@@ -21,8 +21,6 @@ namespace Haikakin.Repository.IRepository
 
         bool UpdateOrder(Order order);
 
-        bool DeleteOrder(Order order);
-
         bool Save();
     }
 }

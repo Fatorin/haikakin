@@ -13,10 +13,11 @@ namespace Haikakin.HaikakinMapper
 
        public HaikakinMappings()
         {
-            CreateMap<User, UserDto>().ReverseMap();
+            CreateMap<User, UserUpdateDto>().ReverseMap();
             CreateMap<Order, OrderDto>().ReverseMap();
             CreateMap<Order, OrderCreateDto>().ReverseMap();
             CreateMap<Product, ProductDto>().ReverseMap();
+            CreateMap<Product, ProductUpsertDto>().ReverseMap();
         }
     }
 }
