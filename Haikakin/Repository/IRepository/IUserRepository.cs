@@ -11,8 +11,10 @@ namespace Haikakin.Repository.IRepository
     public interface IUserRepository
     {
         bool IsUniqueUser(string email);
-        User Authenticate(string userEmail, string userPhone, string password, LoginTypeEnum loginType);
-        User AuthenticateThird(string email, LoginTypeEnum lognType);
+        AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress);
+        AuthenticateResponse AuthenticateThird(string userEmail, LoginTypeEnum loginType, string ipAddress);
+        AuthenticateResponse RefreshToken(string token, string ipAddress);
+        bool RevokeToken(string token, string ipAddress);
         User Register(RegisterModel model);
         User RegisterThird(string username, string email, LoginTypeEnum loginType);
         User GetUser(int id);

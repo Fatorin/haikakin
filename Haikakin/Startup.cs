@@ -68,6 +68,8 @@ namespace Haikakin
             services.AddScoped<ISmsRepository, SmsRepository>();
 
             services.AddAutoMapper(typeof(HaikakinMappings));
+            //防止密碼外洩
+            services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.IgnoreNullValues = true);
 
             services.AddApiVersioning(options =>
             {
@@ -79,14 +81,11 @@ namespace Haikakin
             services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
             services.AddSwaggerGen();
 
+            //JWT設定
             var appSettingsSection = Configuration.GetSection("AppSettings");
-
             services.Configure<AppSettings>(appSettingsSection);
-
             var appSettings = appSettingsSection.Get<AppSettings>();
-
             var key = Encoding.ASCII.GetBytes(appSettings.JwtSecret);
-
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -101,9 +100,11 @@ namespace Haikakin
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
-                    ValidateAudience = false
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
+            //限制檔案上傳大小
             services.Configure<FormOptions>(options =>
             {
                 options.MultipartBodyLengthLimit = 10485760;

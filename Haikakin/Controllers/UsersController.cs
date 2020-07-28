@@ -138,14 +138,56 @@ namespace Haikakin.Controllers
                 return BadRequest(new { message = "傳值錯誤" });
             }
 
-            var user = _userRepo.Authenticate(model.Email, model.PhoneNumber, model.Password, LoginTypeEnum.Normal);
+            var response = _userRepo.Authenticate(model, LoginTypeEnum.Normal, GetIPAddress());
 
-            if (user == null)
+            if (response == null)
             {
                 return BadRequest(new { message = "UserEmail or Password is incorrect" });
             }
 
-            return Ok(user);
+            SetTokenCookie(response.RefreshToken);
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// 刷新Token用
+        /// </summary>
+        /// <returns></returns>
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public IActionResult RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+            var response = _userRepo.RefreshToken(refreshToken, GetIPAddress());
+
+            if (response == null)
+                return Unauthorized(new { message = "Invalid token" });
+
+            SetTokenCookie(response.RefreshToken);
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// 撤銷Token用
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("revoke-token")]
+        public IActionResult RevokeToken([FromBody] string requestToken)
+        {
+            // accept token from request body or cookie
+            var token = requestToken ?? Request.Cookies["refreshToken"];
+
+            if (string.IsNullOrEmpty(token))
+                return BadRequest(new { message = "Token is required" });
+
+            var response = _userRepo.RevokeToken(token, GetIPAddress());
+
+            if (!response)
+                return NotFound(new { message = "Token not found" });
+
+            return Ok(new { message = "Token revoked" });
         }
 
         /// <summary>
@@ -239,7 +281,7 @@ namespace Haikakin.Controllers
             userName = payload.Name;
 
             //檢查有沒有使用信箱 沒信箱或名字不給辦
-            if (string.IsNullOrEmpty(userName)|| string.IsNullOrEmpty(userEmail))
+            if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(userEmail))
             {
                 return BadRequest(new { message = "Can't get name or email." });
             }
@@ -249,13 +291,13 @@ namespace Haikakin.Controllers
             {
                 //創帳號 回傳TOKEN
                 _userRepo.RegisterThird(userName, userEmail, LoginTypeEnum.Google);
-                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google);
+                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google,GetIPAddress());
                 return Ok(user);
             }
             else
             {
                 //有重複帳號回傳JWT TOEKN
-                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google);
+                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
                 return Ok(user);
             }
         }
@@ -341,6 +383,25 @@ namespace Haikakin.Controllers
             request.Method = Method.POST;
             var response = client.Execute(request);
             return response.IsSuccessful;
+        }
+
+        //Token新機制
+        private void SetTokenCookie(string token)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7)
+            };
+            Response.Cookies.Append("refreshToken", token, cookieOptions);
+        }
+
+        private string GetIPAddress()
+        {
+            if (Request.Headers.ContainsKey("X-Forwarded-For"))
+                return Request.Headers["X-Forwarded-For"];
+            else
+                return HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
         }
 
         //FB登入支援，但沒在用

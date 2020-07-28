@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Haikakin.Models
@@ -10,9 +11,11 @@ namespace Haikakin.Models
     public class User
     {
         [Key]
+        [JsonIgnore]
         public int UserId { get; set; }
         [Required]
         public string Username { get; set; }
+        [JsonIgnore]
         public string Password { get; set; }
         public string Email { get; set; }
         public bool EmailVerity { get; set; }
@@ -20,8 +23,8 @@ namespace Haikakin.Models
         public bool PhoneNumberVerity { get; set; }
         public string IPAddress { get; set; }
         public string Role { get; set; }
-        [NotMapped]
-        public string Token { get; set; }
+        [JsonIgnore]
+        public List<RefreshToken> RefreshTokens { get; set; }
         public DateTime LastLoginTime { get; set; }
         public DateTime CreateTime { get; set; }
         public enum LoginTypeEnum { Normal, Facebook, Google }

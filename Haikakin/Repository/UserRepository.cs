@@ -11,6 +11,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using static Haikakin.Models.AuthenticationThirdModel;
@@ -30,19 +31,20 @@ namespace Haikakin.Repository
         }
 
 
-        public User Authenticate(string userEmail, string userPhone, string password, LoginTypeEnum loginType)
+        public AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType,string ipAddress)
         {
-            var encryptPassword = Encrypt.HMACSHA256(password, _appSettings.UserSecret);
+            var encryptPassword = Encrypt.HMACSHA256(model.Password, _appSettings.UserSecret);
 
             User user = null;
-            if (string.IsNullOrEmpty(userEmail))
+            if (!string.IsNullOrEmpty(model.Email))
             {
-                user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
+                user = _db.Users.SingleOrDefault(x => x.Email == model.Email && x.Password == encryptPassword && x.LoginType == loginType);
+
             }
 
-            if (string.IsNullOrEmpty(userPhone))
+            if (!string.IsNullOrEmpty(model.PhoneNumber))
             {
-                user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.Password == encryptPassword && x.LoginType == loginType);
+                user = _db.Users.SingleOrDefault(x => x.PhoneNumber == model.PhoneNumber && x.Password == encryptPassword && x.LoginType == loginType);
             }
 
             if (user == null)
@@ -50,27 +52,17 @@ namespace Haikakin.Repository
                 return null;
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name,user.UserId.ToString()),
-                    new Claim(ClaimTypes.Role,user.Role),
-                    new Claim(ClaimTypes.Email,user.Email)
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+            var jwtToken = generateJwtToken(user);
+            var refreshToken = generateRefreshToken(ipAddress);
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            user.Token = tokenHandler.WriteToken(token);
-            user.Password = "";
-            user.LastLoginTime = DateTime.UtcNow;
-            return user;
+            user.RefreshTokens.Add(refreshToken);
+            _db.Update(user);
+            _db.SaveChanges();
+
+            return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
         }
 
-        public User AuthenticateThird(string userEmail, LoginTypeEnum loginType)
+        public AuthenticateResponse AuthenticateThird(string userEmail, LoginTypeEnum loginType, string ipAddress)
         {
             var user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.LoginType == loginType);
 
@@ -79,23 +71,62 @@ namespace Haikakin.Repository
                 return null;
             }
 
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name,user.UserId.ToString()),
-                    new Claim(ClaimTypes.Role,user.Role.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
+            var jwtToken = generateJwtToken(user);
+            var refreshToken = generateRefreshToken(ipAddress);
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            user.Token = tokenHandler.WriteToken(token);
-            user.Password = "";
-            user.LastLoginTime = DateTime.UtcNow;
-            return user;
+            user.RefreshTokens.Add(refreshToken);
+            _db.Update(user);
+            _db.SaveChanges();
+
+            return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
+        }
+
+        public AuthenticateResponse RefreshToken(string token, string ipAddress)
+        {
+            var user = _db.Users.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
+
+            // return null if no user found with token
+            if (user == null) return null;
+
+            var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+
+            // return null if token is no longer active
+            if (!refreshToken.IsActive) return null;
+
+            // replace old refresh token with a new one and save
+            var newRefreshToken = generateRefreshToken(ipAddress);
+            refreshToken.Revoked = DateTime.UtcNow;
+            refreshToken.RevokedByIp = ipAddress;
+            refreshToken.ReplacedByToken = newRefreshToken.Token;
+            user.RefreshTokens.Add(newRefreshToken);
+            _db.Update(user);
+            _db.SaveChanges();
+
+            // generate new jwt
+            var jwtToken = generateJwtToken(user);
+
+            return new AuthenticateResponse(user, jwtToken, newRefreshToken.Token);
+        }
+
+        public bool RevokeToken(string token, string ipAddress)
+        {
+            var user = _db.Users.SingleOrDefault(u => u.RefreshTokens.Any(t => t.Token == token));
+
+            // return false if no user found with token
+            if (user == null) return false;
+
+            var refreshToken = user.RefreshTokens.Single(x => x.Token == token);
+
+            // return false if token is not active
+            if (!refreshToken.IsActive) return false;
+
+            // revoke token and save
+            refreshToken.Revoked = DateTime.UtcNow;
+            refreshToken.RevokedByIp = ipAddress;
+            _db.Update(user);
+            _db.SaveChanges();
+
+            return true;
         }
 
         public bool IsUniqueUser(string email)
@@ -161,6 +192,41 @@ namespace Haikakin.Repository
         public bool Save()
         {
             return _db.SaveChanges() >= 0 ? true : false;
+        }
+
+        private string generateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]{
+                    new Claim(ClaimTypes.Name,$"{user.UserId}"),
+                    new Claim(ClaimTypes.Role,user.Role),
+                    new Claim(ClaimTypes.Email,user.Email)
+                }),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        private RefreshToken generateRefreshToken(string ipAddress)
+        {
+            using (var rngCryptoServiceProvider = new RNGCryptoServiceProvider())
+            {
+                var randomBytes = new byte[64];
+                rngCryptoServiceProvider.GetBytes(randomBytes);
+                return new RefreshToken
+                {
+                    Token = Convert.ToBase64String(randomBytes),
+                    Expires = DateTime.UtcNow.AddDays(7),
+                    Created = DateTime.UtcNow,
+                    CreatedByIp = ipAddress
+                };
+            }
         }
     }
 }
