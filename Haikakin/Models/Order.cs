@@ -22,8 +22,6 @@ namespace Haikakin.Models
         [Required]
         public OrderPayType OrderPay { get; set; }
         public int OrderPaySerial { get; set; }
-
-        public double ExchangeRate { get; set; }
         [Required]
         [ForeignKey("UserId")]
         public int UserId { get; set; }

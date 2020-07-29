@@ -4,7 +4,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
-using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
@@ -145,7 +144,7 @@ namespace Haikakin.Controllers
             }
 
             //產生訂單需求
-            double exchange = ExchangeParse.GetExchange();
+
             //依序將商品加入訂單
             var order = new Order()
             {
@@ -154,7 +153,6 @@ namespace Haikakin.Controllers
                 OrderPay = OrderPayType.None,
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderPaySerial = 0,
-                ExchangeRate = exchange,
                 UserId = userId
             };
 
@@ -284,7 +282,7 @@ namespace Haikakin.Controllers
                 }
             }
 
-            if (orderObj.OrderStatus == OrderStatusType.Cancel)
+            if(orderObj.OrderStatus== OrderStatusType.Cancel)
             {
                 return BadRequest(new { message = "訂單已取消" });
             }
