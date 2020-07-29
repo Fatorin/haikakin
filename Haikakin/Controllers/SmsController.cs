@@ -1,27 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using AutoMapper;
-using Google.Apis.Auth;
-using Google.Apis.Auth.OAuth2;
 using Haikakin.Extension;
 using Haikakin.Models;
-using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Twilio;
+using Twilio.Exceptions;
 using Twilio.Rest.Api.V2010.Account;
-using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
 {
@@ -46,13 +33,16 @@ namespace Haikakin.Controllers
         /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("SmsAuthenticate")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public IActionResult SmsVerityCode(string phoneNumber)
         {
             //檢查該手機號碼是否註冊過
             var smsModel = _smsRepo.GetSmsModel(phoneNumber);
             if (smsModel != null)
             {
-                if (smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
+                if (smsModel.IsUsed) return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼已註冊過" });
             }
             //產生驗證用字串
             var randomString = SmsRandomNumber.CreatedNumber();
@@ -60,17 +50,24 @@ namespace Haikakin.Controllers
             //如果有回應則分析回傳結果
             TwilioClient.Init(_appSettings.TwilioSmsAccountID, _appSettings.TwilioSmsAuthToken);
 
-
-            var msg = MessageResource.Create(
-                    body: $"Your Haikakin Web Services verification code is:{randomString}",
-                    from: new Twilio.Types.PhoneNumber($"+12058138320"),
-                    to: new Twilio.Types.PhoneNumber($"+{phoneNumber}")
-            );
-
-            //確認回傳有無錯誤
-            if (msg.ErrorCode != null)
+            try
             {
-                return BadRequest(new { message = "Request smsCode fail, please check number or find support." });
+                var msg = MessageResource.Create(
+                        body: $"Your Haikakin Web Services verification code is:{randomString}",
+                        from: new Twilio.Types.PhoneNumber($"+12058138320"),
+                        to: new Twilio.Types.PhoneNumber($"+{phoneNumber}")
+                );
+
+                //確認回傳有無錯誤
+                if (msg.ErrorCode != null)
+                {
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼不正確或簡訊發送商異常" });
+                }
+            }
+            catch (TwilioException e)
+            {
+                Console.WriteLine(e);
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼不正確或簡訊發送商異常" });
             }
 
             //抓一下有沒有已存在的
@@ -86,7 +83,7 @@ namespace Haikakin.Controllers
 
                 if (!_smsRepo.CreateSmsModel(smsModel))
                 {
-                    return BadRequest(new { message = "Create smsCode fail." });
+                    return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統建立驗證碼出錯" });
                 }
             }
             else
@@ -95,7 +92,7 @@ namespace Haikakin.Controllers
                 smsModel.VerityCode = randomString;
                 if (!_smsRepo.UpdateSmsModel(smsModel))
                 {
-                    return BadRequest(new { message = "Refresh smsCode fail." });
+                    return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新驗證碼出錯" });
                 }
             }
 

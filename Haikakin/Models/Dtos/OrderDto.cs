@@ -11,16 +11,13 @@ namespace Haikakin.Models.Dtos
     public class OrderDto
     {
         public int OrderId { get; set; }
-        public DateTime OrderTime { get; set; }
-        [Required]
+        public DateTime OrderCreateTime { get; set; }
+        public DateTime OrderLastUpdateTime { get; set; }
         public OrderStatusType OrderStatus { get; set; }
-        [Required]
         public int OrderPrice { get; set; }
-
         public OrderPayType OrderPay { get; set; }
-        [Required]
+        public int OrderPaySerial { get; set; }
         public int UserId { get; set; }
-
-        public User User { get; set; }
+        public ICollection<OrderInfo> OrderInfos { get; set; }
     }
 }

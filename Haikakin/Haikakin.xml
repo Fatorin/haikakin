@@ -24,17 +24,16 @@
             <param name="orderDtos"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(System.Int32,Haikakin.Models.Dtos.OrderUpdateDto)">
+        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.Dtos.OrderUpdateDto)">
             <summary>
-            更新指定訂單，暫時還有問題
+            結束指定訂單，用於第三方的回傳，所以不限定使用者
             </summary>
-            <param name="orderId"></param>
             <param name="orderDto"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.CancelOrder(System.Int32)">
             <summary>
-            取消訂單
+            取消訂單，只有管理員可使用
             </summary>
             <param name="orderId"></param>
             <returns></returns>
@@ -127,6 +126,18 @@
              </summary>
              <param name="model"></param>
              <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.RefreshToken">
+            <summary>
+            刷新Token用
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.RevokeToken(System.String)">
+            <summary>
+            撤銷Token用
+            </summary>
+            <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.UsersController.Register(Haikakin.Models.RegisterModel)">
             <summary>

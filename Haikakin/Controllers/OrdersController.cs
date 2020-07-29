@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using AutoMapper;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
@@ -17,7 +15,6 @@ namespace Haikakin.Controllers
     [Authorize]
     [Route("api/v{version:apiVersion}/Orders")]
     [ApiController]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public class OrdersController : ControllerBase
     {
         private IOrderRepository _orderRepo;
@@ -86,12 +83,10 @@ namespace Haikakin.Controllers
         /// <param name="orderDtos"></param>
         /// <returns></returns>
         [HttpPost]
-        [ProducesResponseType(201, Type = typeof(OrderDto))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Order))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos)
         {
@@ -100,13 +95,13 @@ namespace Haikakin.Controllers
             var identity = HttpContext.User.Identity as ClaimsIdentity;
             if (identity == null)
             {
-                return BadRequest(new { message = "Bad token" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
             }
             var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             //沒收到資料代表請求失敗
             if (orderDtos == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
             }
             //依序檢查商品剩餘數量並計算總價錢
             foreach (OrderCreateDto dto in orderDtos)
@@ -115,48 +110,48 @@ namespace Haikakin.Controllers
                 if (!_productRepo.ProductExists(dto.ProductId))
                 {
                     //商品不存在
-                    return BadRequest(new { message = "不存在的商品" });
+                    return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品" });
                 }
                 //不能買
                 var product = _productRepo.GetProduct(dto.ProductId);
                 if (!product.CanBuy)
                 {
-                    return BadRequest(new { message = "已下架" });
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "商品已下架" });
                 }
                 //超過購買限制
                 if (product.Limit != 0)
                 {
-                    return BadRequest(new { message = "超過數量購買限制" });
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "超過最大購買限制" });
                 }
 
                 //商品數量錯誤
                 if (dto.OrderCount == 0)
                 {
-                    return BadRequest(new { message = "購買數量為0" });
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "購買數量異常" });
                 }
                 //數量超過庫存
                 if (dto.OrderCount > product.Stock)
                 {
-                    return BadRequest(new { message = "庫存不足" });
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "庫存不足" });
                 }
 
                 price += (product.Price) * dto.OrderCount;
             }
 
             //產生訂單需求
-
             //依序將商品加入訂單
-            var order = new Order()
+            var orderObj = new Order()
             {
                 OrderCreateTime = DateTime.UtcNow,
                 OrderPrice = price,
                 OrderPay = OrderPayType.None,
                 OrderStatus = OrderStatusType.NonPayment,
+                OrderLastUpdateTime = DateTime.UtcNow,
                 OrderPaySerial = 0,
-                UserId = userId
+                UserId = userId,
             };
 
-            var orderId = _orderRepo.CreateOrder(order);
+            var orderId = _orderRepo.CreateOrder(orderObj);
             //產生訂單物件
             foreach (OrderCreateDto dto in orderDtos)
             {
@@ -170,121 +165,93 @@ namespace Haikakin.Controllers
                 _orderInfoRepo.CreateOrderInfo(orderInfo);
             }
 
-            return Ok();
+            return CreatedAtRoute("GetOrder", new { version = HttpContext.GetRequestedApiVersion().ToString(), orderId = orderObj.OrderId }, orderObj);
         }
 
         /// <summary>
-        /// 更新指定訂單，暫時還有問題
+        /// 結束指定訂單，用於第三方的回傳，所以不限定使用者
         /// </summary>
-        /// <param name="orderId"></param>
         /// <param name="orderDto"></param>
         /// <returns></returns>
-        [HttpPatch("{orderId:int}", Name = "FinishOrder")]
+        [HttpPatch("FinishOrder")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "Admin")]
-        public IActionResult FinishOrder(int orderId, [FromBody] OrderUpdateDto orderDto)
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [AllowAnonymous]
+        public IActionResult FinishOrder([FromBody] OrderUpdateDto orderDto)
         {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-
-            if (identity == null)
+            if (orderDto == null)
             {
-                return BadRequest(new { message = "Bad token" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料請求異常" });
             }
 
-            if (orderDto == null || orderId != orderDto.OrderId)
+            if (_orderRepo.GetOrder(orderDto.OrderId).OrderStatus == OrderStatusType.Over)
             {
-                return BadRequest(ModelState);
-            }
-            //對應到相應的資料
-            var orderObj = _mapper.Map<Order>(orderDto);
-
-            //如果有不是管理者則自己身ID為主，此時傳值無效
-            var userId = identity.FindFirst(ClaimTypes.Name).Value;
-            var role = identity.FindFirst(ClaimTypes.Role).Value;
-            if (role != "Admin")
-            {
-                if (orderObj.UserId != int.Parse(userId))
-                {
-                    return BadRequest(new { message = "這不是你的訂單" });
-                }
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已結束" });
             }
 
-            if (_orderRepo.GetOrder(orderId).OrderStatus == OrderStatusType.AlreadyPaid)
+            if (_orderRepo.GetOrder(orderDto.OrderId).OrderStatus == OrderStatusType.Cancel)
             {
-                return BadRequest(new { message = "訂單已結束無法更改" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已取消" });
             }
-            //檢查金流資訊
 
-            var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(orderObj.OrderId);
-            /*if (!_orderInfoRepo.UpdateOrderInfos(orderInfos))
-            {
-                return BadRequest(new { message = "訂單資料更新錯誤" });
-            }*/
-            //模擬完成結帳
-            //var orderCheckStatus = OrderStatusType.Over;
-            var productInfoStatus = ProductInfo.ProductStatusEnum.Used;
-
+            //檢查金流資訊，未實作
+            //如果金流資訊錯誤則回傳失敗
+            //獲得對應訂單並修改
+            var order = _orderRepo.GetOrder(orderDto.OrderId);
+            var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(orderDto.OrderId);
+            //orderInfo不用更新
             foreach (OrderInfo orderInfo in orderInfos)
             {
                 foreach (ProductInfo productInfo in orderInfo.ProductInfos)
                 {
                     //訂單改成鎖定
-                    productInfo.ProductStatus = productInfoStatus;
-                    _productInfoRepo.UpdateProductInfo(productInfo);
+                    productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Used;
+                    if (_productInfoRepo.UpdateProductInfo(productInfo))
+                    {
+                        return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"更新資料錯誤" });
+                    };
                 }
             }
 
-            if (!_orderRepo.UpdateOrder(orderObj))
+            order.OrderStatus = OrderStatusType.Over;
+            order.OrderLastUpdateTime = DateTime.UtcNow;
+            if (!_orderRepo.UpdateOrder(order))
             {
-                ModelState.AddModelError("", $"Something went wrong when updating the data {orderObj.OrderId}");
-                return StatusCode(500, ModelState);
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"更新資料錯誤，訂單編號{order.OrderId}" });
             }
 
+            //沒問題就發送序號
             return NoContent();
         }
 
         /// <summary>
-        /// 取消訂單
+        /// 取消訂單，只有管理員可使用
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns></returns>
         [HttpPatch("CancelOrder")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
         public IActionResult CancelOrder(int orderId)
         {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-
-            if (identity == null)
-            {
-                return BadRequest(new { message = "Bad token" });
-            }
-
-            var userId = identity.FindFirst(ClaimTypes.Name).Value;
-            var role = identity.FindFirst(ClaimTypes.Role).Value;
-
             var orderObj = _orderRepo.GetOrder(orderId);
             if (orderObj == null)
             {
-                return NotFound(new { message = "查無此訂單" });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
             }
 
-            if (role != "Admin")
+            if (orderObj.OrderStatus == OrderStatusType.Over)
             {
-                if (orderObj.UserId != int.Parse(userId))
-                {
-                    return BadRequest(new { message = "這不是你的訂單" });
-                }
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已結束" });
             }
 
-            if(orderObj.OrderStatus== OrderStatusType.Cancel)
+            if (orderObj.OrderStatus == OrderStatusType.Cancel)
             {
-                return BadRequest(new { message = "訂單已取消" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已取消" });
             }
 
             //更新庫存 解除已使用
@@ -295,7 +262,7 @@ namespace Haikakin.Controllers
             {
                 foreach (ProductInfo productInfo in orderInfo.ProductInfos)
                 {
-                    productInfo.OrderInfoId = 0;
+                    productInfo.OrderInfoId = null;
                     productInfo.LastUpdateTime = DateTime.UtcNow;
                     productInfo.ProductStatus = ProductInfo.ProductStatusEnum.NotUse;
                     //更新庫存寫在UpdateProductInfo裡面
@@ -311,9 +278,9 @@ namespace Haikakin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetOrderInUser")]
-        [ProducesResponseType(200, Type = typeof(OrderDto))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+        [ProducesResponseType(200, Type = typeof(List<OrderDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
         public IActionResult GetOrderInUser()
         {
@@ -321,7 +288,7 @@ namespace Haikakin.Controllers
 
             if (identity == null)
             {
-                return BadRequest(new { message = "Bad token" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者身份異常" });
             }
 
             var userId = identity.FindFirst(ClaimTypes.Name).Value;
@@ -330,7 +297,7 @@ namespace Haikakin.Controllers
 
             if (objList == null)
             {
-                return NotFound();
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此使用者" });
             }
 
             var objDto = new List<OrderDto>();

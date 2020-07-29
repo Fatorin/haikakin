@@ -1,30 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.IO;
-using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Mail;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using Google.Apis.Auth;
-using Google.Apis.Auth.OAuth2;
-using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Linq;
 using RestSharp;
 using RestSharp.Authenticators;
-using Twilio.TwiML.Voice;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -53,7 +42,9 @@ namespace Haikakin.Controllers
         /// <param name="userId"></param>
         /// <returns></returns>
         [Authorize(Roles = "User,Admin")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(User))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [HttpGet("GetUser")]
         public IActionResult GetUser(int userId)
         {
@@ -61,7 +52,7 @@ namespace Haikakin.Controllers
 
             if (identity == null)
             {
-                return BadRequest(new { message = "Bad token" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
             }
 
             //如果有不是管理者則自己身ID為主，此時傳值無效
@@ -75,7 +66,7 @@ namespace Haikakin.Controllers
 
             if (user == null)
             {
-                return NotFound();
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存的使用者" });
             }
 
             user.Password = "";
@@ -89,7 +80,9 @@ namespace Haikakin.Controllers
         /// <param name="userDto"></param>
         /// <returns></returns>
         [Authorize(Roles = "User,Admin")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         [HttpPost("UpdateUser")]
         public IActionResult UpdateUser(UserUpdateDto userDto)
         {
@@ -97,12 +90,12 @@ namespace Haikakin.Controllers
 
             if (identity == null)
             {
-                return BadRequest(new { message = "Bad token" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
             }
 
             if (userDto == null)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
             }
 
             //如果有不是管理者則自己身ID為主，此時傳值無效
@@ -116,10 +109,10 @@ namespace Haikakin.Controllers
 
             if (_userRepo.UpdateUser(userObj))
             {
-                return StatusCode(500, ModelState);
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userObj.UserId}" });
             }
 
-            return Ok();
+            return NoContent();
         }
 
         /// <summary>
@@ -128,21 +121,21 @@ namespace Haikakin.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthenticateResponse))]
         [HttpPost("Authenticate")]
         public IActionResult Authenticate([FromBody] AuthenticationModel model)
         {
             if (model == null)
             {
-                return BadRequest(new { message = "傳值錯誤" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
             }
 
             var response = _userRepo.Authenticate(model, LoginTypeEnum.Normal, GetIPAddress());
 
             if (response == null)
             {
-                return BadRequest(new { message = "UserEmail or Password is incorrect" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "帳號/手機或密碼不正確" });
             }
 
             SetTokenCookie(response.RefreshToken);
@@ -155,6 +148,8 @@ namespace Haikakin.Controllers
         /// </summary>
         /// <returns></returns>
         [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthenticateResponse))]
         [HttpPost("refresh-token")]
         public IActionResult RefreshToken()
         {
@@ -162,7 +157,7 @@ namespace Haikakin.Controllers
             var response = _userRepo.RefreshToken(refreshToken, GetIPAddress());
 
             if (response == null)
-                return Unauthorized(new { message = "Invalid token" });
+                return Unauthorized(new ErrorPack { ErrorCode = 1000, ErrorMessage = "Token錯誤" });
 
             SetTokenCookie(response.RefreshToken);
 
@@ -173,21 +168,25 @@ namespace Haikakin.Controllers
         /// 撤銷Token用
         /// </summary>
         /// <returns></returns>
+        [Authorize(Roles = "User,Admin")]
         [HttpPost("revoke-token")]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthenticateResponse))]
         public IActionResult RevokeToken([FromBody] string requestToken)
         {
             // accept token from request body or cookie
             var token = requestToken ?? Request.Cookies["refreshToken"];
 
             if (string.IsNullOrEmpty(token))
-                return BadRequest(new { message = "Token is required" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "輸入資料錯誤" });
 
             var response = _userRepo.RevokeToken(token, GetIPAddress());
 
             if (!response)
-                return NotFound(new { message = "Token not found" });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的Token使用者" });
 
-            return Ok(new { message = "Token revoked" });
+            return Ok(new { message = "Token 已撤銷" });
         }
 
         /// <summary>
@@ -196,33 +195,40 @@ namespace Haikakin.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost("Register")]
         public IActionResult Register([FromBody] RegisterModel model)
         {
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
+            }
+
             //檢查EMAIL有沒有使用過
             if (!_userRepo.IsUniqueUser(model.Email))
             {
-                return BadRequest(new { message = "User Email already exists." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱已使用過" });
             }
 
             //檢查驗證模組裡面有沒有對應的號碼
             var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
             if (smsModel == null)
             {
-                return BadRequest(new { message = "Phone number not verification." });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "手機號碼尚未驗證" });
             }
 
             if (smsModel.IsUsed)
             {
-                return BadRequest(new { message = "Phone number was used." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "手機號碼已註冊過" });
             }
 
             //檢查驗證碼對不對
             if (smsModel.VerityCode != model.SmsCode)
             {
-                return BadRequest(new { message = "SmsCode is wrong." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼不正確" });
             }
 
             //註冊寫入db
@@ -230,18 +236,18 @@ namespace Haikakin.Controllers
 
             if (user == null)
             {
-                return BadRequest(new { message = "Error while registering." });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統註冊異常" });
             }
 
             //修改sms的資料
             smsModel.IsUsed = true;
             if (!_smsRepo.UpdateSmsModel(smsModel))
             {
-                return BadRequest(new { message = "Unknown error." });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新驗證碼資訊異常" });
             };
 
             //補寄信流程
-            SendMail(user.UserId.ToString(), user.Email);
+            SendMail($"{user.UserId}", user.Email);
 
             return Ok();
         }
@@ -252,38 +258,35 @@ namespace Haikakin.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthenticateResponse))]
         [HttpPost("SignByGoogle")]
         public async Task<IActionResult> RegisterAndLoginByThird([FromBody] AuthenticationThirdModel model)
         {
             if (model == null)
             {
-                return BadRequest(new { message = "沒有接收到資料" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料請求錯誤" });
             }
 
             if (model.LoginType != LoginTypeEnum.Google)
             {
-                return BadRequest(new { message = "Not supported login." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不支援的登入方式" });
             }
 
-            var userName = "";
-            var userEmail = "";
             //產生抓取應用程式Token
-
             var payload = await GoogleJsonWebSignature.ValidateAsync(model.TokenId).ConfigureAwait(true);
             if (payload == null)
             {
-                return BadRequest(new { message = "Google valid fail." });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "Google驗證異常" });
             }
 
-            userEmail = payload.Email;
-            userName = payload.Name;
-
+            var userEmail = payload.Email;
+            var userName = payload.Name;
             //檢查有沒有使用信箱 沒信箱或名字不給辦
             if (string.IsNullOrEmpty(userName) || string.IsNullOrEmpty(userEmail))
             {
-                return BadRequest(new { message = "Can't get name or email." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "Google帳戶沒有信箱或用戶名" });
             }
 
             //檢查有無重複帳號
@@ -291,7 +294,7 @@ namespace Haikakin.Controllers
             {
                 //創帳號 回傳TOKEN
                 _userRepo.RegisterThird(userName, userEmail, LoginTypeEnum.Google);
-                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google,GetIPAddress());
+                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
                 return Ok(user);
             }
             else
@@ -308,30 +311,32 @@ namespace Haikakin.Controllers
         /// <param name="model"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet("EmailVerity")]
         public IActionResult EmailVerity([FromBody] EmailVerityModel model)
         {
             if (model == null)
             {
-                return BadRequest(new { message = "沒有接收到資料" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
             }
 
             var user = _userRepo.GetUser(model.userId);
-            if (user.EmailVerity == true)
-            {
-                return BadRequest(new { message = "Has verified" });
-            }
-
             if (user == null)
             {
-                return BadRequest(new { message = "Not found user." });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有此用戶" });
+            }
+
+            if (user.EmailVerity == true)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱已驗證過" });
             }
 
             if (user.UserId != model.userId || user.Email != model.userEmail)
             {
-                return BadRequest(new { message = "Not correct user." });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶資訊不正確" });
             }
 
             //如果是要驗證
@@ -340,20 +345,20 @@ namespace Haikakin.Controllers
                 user.EmailVerity = true;
                 if (!_userRepo.UpdateUser(user))
                 {
-                    return BadRequest(new { message = "Unknown Error." });
+                    return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統驗證信箱異常" });
                 }
 
                 return Ok();
             }
 
-            //如果是要驗證
+            //如果是要修改
             if (model.emailVerityAction == EmailVerityModel.EmailVerityAction.EmailModify)
             {
                 user.Email = model.userEmail;
                 user.EmailVerity = true;
                 if (!_userRepo.UpdateUser(user))
                 {
-                    return BadRequest(new { message = "Unknown Error." });
+                    return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統修改信箱異常" });
                 }
 
                 return Ok();

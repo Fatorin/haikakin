@@ -56,6 +56,7 @@ namespace Haikakin.Repository
             var refreshToken = generateRefreshToken(ipAddress);
 
             user.RefreshTokens.Add(refreshToken);
+            user.LastLoginTime = DateTime.UtcNow;
             _db.Update(user);
             _db.SaveChanges();
 
@@ -75,6 +76,7 @@ namespace Haikakin.Repository
             var refreshToken = generateRefreshToken(ipAddress);
 
             user.RefreshTokens.Add(refreshToken);
+            user.LastLoginTime = DateTime.UtcNow;
             _db.Update(user);
             _db.SaveChanges();
 
