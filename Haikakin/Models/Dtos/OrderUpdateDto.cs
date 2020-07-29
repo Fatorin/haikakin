@@ -12,6 +12,6 @@ namespace Haikakin.Models.Dtos
     {
         public int OrderId { get; set; }
         public int OrderPaySerial { get; set; }
-        public OrderPayType OrderPay { get; set; }
+        public OrderPayWayEnum OrderPay { get; set; }
     }
 }

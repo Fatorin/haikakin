@@ -15,7 +15,7 @@ namespace Haikakin.Models.Dtos
         public DateTime OrderLastUpdateTime { get; set; }
         public OrderStatusType OrderStatus { get; set; }
         public int OrderPrice { get; set; }
-        public OrderPayType OrderPay { get; set; }
+        public OrderPayWayEnum OrderPay { get; set; }
         public int OrderPaySerial { get; set; }
         public int UserId { get; set; }
         public ICollection<OrderInfo> OrderInfos { get; set; }

@@ -28,6 +28,8 @@
     <Compile Include="Migrations\20200729052625_InitDB.Designer.cs" />
     <Compile Include="Migrations\20200729054054_InitDB2.cs" />
     <Compile Include="Migrations\20200729054054_InitDB2.Designer.cs" />
+    <Compile Include="Migrations\20200729075535_InitDB3.cs" />
+    <Compile Include="Migrations\20200729075535_InitDB3.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 

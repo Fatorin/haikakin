@@ -162,7 +162,7 @@ namespace Haikakin.Controllers
             {
                 OrderCreateTime = DateTime.UtcNow,
                 OrderPrice = price,
-                OrderPay = OrderPayType.None,
+                OrderPayWay = OrderPayWayEnum.None,
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderLastUpdateTime = DateTime.UtcNow,
                 OrderPaySerial = 0,
