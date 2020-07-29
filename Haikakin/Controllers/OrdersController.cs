@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using AutoMapper;
+using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
@@ -156,6 +157,7 @@ namespace Haikakin.Controllers
                 price += (product.Price) * dto.OrderCount;
             }
 
+            double exchange = ExchangeParse.GetExchange();
             //產生訂單需求
             //依序將商品加入訂單
             var orderObj = new Order()
@@ -166,6 +168,7 @@ namespace Haikakin.Controllers
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderLastUpdateTime = DateTime.UtcNow,
                 OrderPaySerial = 0,
+                Exchange = exchange,
                 UserId = userId,
             };
 

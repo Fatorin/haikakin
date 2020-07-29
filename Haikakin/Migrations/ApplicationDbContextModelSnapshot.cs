@@ -28,6 +28,10 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<double>("Exchange")
+                        .HasColumnName("exchange")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("OrderCheckCode")
                         .HasColumnName("order_check_code")
                         .HasColumnType("text");

@@ -23,6 +23,7 @@ namespace Haikakin.Models
         public OrderPayWayEnum OrderPayWay { get; set; }
         public int OrderPaySerial { get; set; }
         public string OrderCheckCode { get; set; }
+        public double Exchange { get; set; }
         [Required]
         [ForeignKey("UserId")]
         public int UserId { get; set; }

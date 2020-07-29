@@ -24,12 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20200729052625_InitDB.cs" />
-    <Compile Include="Migrations\20200729052625_InitDB.Designer.cs" />
-    <Compile Include="Migrations\20200729054054_InitDB2.cs" />
-    <Compile Include="Migrations\20200729054054_InitDB2.Designer.cs" />
-    <Compile Include="Migrations\20200729075535_InitDB3.cs" />
-    <Compile Include="Migrations\20200729075535_InitDB3.Designer.cs" />
+    <Compile Include="Migrations\20200729163152_InitDB.cs" />
+    <Compile Include="Migrations\20200729163152_InitDB.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 
@@ -39,6 +35,7 @@
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="EFCore.NamingConventions" Version="1.1.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.48.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.24" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.6" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.6" />

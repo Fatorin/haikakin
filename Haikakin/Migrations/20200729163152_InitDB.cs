@@ -19,8 +19,10 @@ namespace Haikakin.Migrations
                     order_last_update_time = table.Column<DateTime>(nullable: false),
                     order_status = table.Column<int>(nullable: false),
                     order_price = table.Column<double>(nullable: false),
-                    order_pay = table.Column<int>(nullable: false),
+                    order_pay_way = table.Column<int>(nullable: false),
                     order_pay_serial = table.Column<int>(nullable: false),
+                    order_check_code = table.Column<string>(nullable: true),
+                    exchange = table.Column<double>(nullable: false),
                     user_id = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
@@ -43,7 +45,6 @@ namespace Haikakin.Migrations
                     description = table.Column<string>(nullable: true),
                     limit = table.Column<int>(nullable: false),
                     last_update_time = table.Column<DateTime>(nullable: false),
-                    limit_pay_time = table.Column<DateTime>(nullable: false),
                     item_type = table.Column<int>(nullable: false),
                     item_order = table.Column<int>(nullable: false)
                 },
