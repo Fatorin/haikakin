@@ -3,15 +3,17 @@ using System;
 using Haikakin.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20200729054054_InitDB2")]
+    partial class InitDB2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,10 +30,6 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<string>("OrderCheckCode")
-                        .HasColumnName("order_check_code")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("OrderCreateTime")
                         .HasColumnName("order_create_time")
                         .HasColumnType("timestamp without time zone");
@@ -40,12 +38,12 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("OrderPaySerial")
-                        .HasColumnName("order_pay_serial")
+                    b.Property<int>("OrderPay")
+                        .HasColumnName("order_pay")
                         .HasColumnType("integer");
 
-                    b.Property<int>("OrderPayWay")
-                        .HasColumnName("order_pay_way")
+                    b.Property<int>("OrderPaySerial")
+                        .HasColumnName("order_pay_serial")
                         .HasColumnType("integer");
 
                     b.Property<double>("OrderPrice")
@@ -311,7 +309,7 @@ namespace Haikakin.Migrations
             modelBuilder.Entity("Haikakin.Models.ProductInfo", b =>
                 {
                     b.HasOne("Haikakin.Models.OrderInfo", "OrderInfo")
-                        .WithMany()
+                        .WithMany("ProductInfos")
                         .HasForeignKey("OrderInfoId")
                         .HasConstraintName("fk_product_infos_order_infos_order_info_id");
 

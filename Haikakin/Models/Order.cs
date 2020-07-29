@@ -18,13 +18,15 @@ namespace Haikakin.Models
         public OrderStatusType OrderStatus { get; set; }
         [Required]
         public double OrderPrice { get; set; }
-        public enum OrderPayType { None, GooglePay, ApplePay, LinePay, CVSBarCode, CreditCard, ATM, WebATM }
+        public enum OrderPayWayEnum { None, GooglePay, ApplePay, LinePay, CVSBarCode, CreditCard, ATM, WebATM }
         [Required]
-        public OrderPayType OrderPay { get; set; }
+        public OrderPayWayEnum OrderPayWay { get; set; }
         public int OrderPaySerial { get; set; }
+        public string OrderCheckCode { get; set; }
         [Required]
         [ForeignKey("UserId")]
         public int UserId { get; set; }
+
         public ICollection<OrderInfo> OrderInfos { get; set; }
     }
 }

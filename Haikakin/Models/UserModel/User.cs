@@ -28,9 +28,8 @@ namespace Haikakin.Models
         public DateTime LastLoginTime { get; set; }
         public DateTime CreateTime { get; set; }
         public enum LoginTypeEnum { Normal, Facebook, Google }
-
         public LoginTypeEnum LoginType { get; set; }
-
+        public int CancelTimes { get; set; }
         public bool CheckBan { get; set; }
     }
 

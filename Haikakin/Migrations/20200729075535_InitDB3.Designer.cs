@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200728135438_UpdateDB_JWT")]
-    partial class UpdateDB_JWT
+    [Migration("20200729075535_InitDB3")]
+    partial class InitDB3
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -30,6 +30,10 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<string>("OrderCheckCode")
+                        .HasColumnName("order_check_code")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("OrderCreateTime")
                         .HasColumnName("order_create_time")
                         .HasColumnType("timestamp without time zone");
@@ -38,12 +42,12 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("OrderPay")
-                        .HasColumnName("order_pay")
-                        .HasColumnType("integer");
-
                     b.Property<int>("OrderPaySerial")
                         .HasColumnName("order_pay_serial")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrderPayWay")
+                        .HasColumnName("order_pay_way")
                         .HasColumnType("integer");
 
                     b.Property<double>("OrderPrice")
@@ -134,10 +138,6 @@ namespace Haikakin.Migrations
                     b.Property<int>("Limit")
                         .HasColumnName("limit")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime>("LimitPayTime")
-                        .HasColumnName("limit_pay_time")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double>("Price")
                         .HasColumnName("price")
@@ -241,6 +241,10 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<int>("CancelTimes")
+                        .HasColumnName("cancel_times")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("CheckBan")
                         .HasColumnName("check_ban")
                         .HasColumnType("boolean");
@@ -309,7 +313,7 @@ namespace Haikakin.Migrations
             modelBuilder.Entity("Haikakin.Models.ProductInfo", b =>
                 {
                     b.HasOne("Haikakin.Models.OrderInfo", "OrderInfo")
-                        .WithMany("ProductInfos")
+                        .WithMany()
                         .HasForeignKey("OrderInfoId")
                         .HasConstraintName("fk_product_infos_order_infos_order_info_id");
 

@@ -2,11 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AutoMapper;
 using Haikakin.Models;
-using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +29,7 @@ namespace Haikakin.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("GetProductInfos")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<ProductInfo>))]
         [Authorize(Roles = "Admin")]
         public IActionResult GetProductInfos()
         {
@@ -47,16 +43,19 @@ namespace Haikakin.Controllers
         /// <param name="productInfoId"></param>
         /// <returns></returns>
         [HttpPost("GetProductInfo")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductInfo))]
         [Authorize(Roles = "Admin")]
         public IActionResult GetProductInfo(int productInfoId)
         {
             var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+
             if (productInfo == null)
             {
-                return BadRequest(new { message = "不存在的ID" });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的項次" });
             }
-            return Ok();
+
+            return Ok(productInfo);
         }
 
         /// <summary>
@@ -65,19 +64,19 @@ namespace Haikakin.Controllers
         /// <param name="productInfoFile"></param>
         /// <returns></returns>
         [HttpPost("CreateProductInfo")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Roles = "Admin")]
         public IActionResult CreateProductInfo([FromForm] ProductInfoFile productInfoFile)
         {
             if (productInfoFile == null || productInfoFile.FormFiles == null)
             {
-                return BadRequest(new { message = "資料傳送異常，請確認是否有上傳檔案" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請確認是否有上傳檔案" });
             }
 
             if (!_productRepo.ProductExists(productInfoFile.ProductId))
             {
-                return BadRequest(new { message = "不存在的商品" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品項目" });
             }
 
             var count = 0;
@@ -107,10 +106,12 @@ namespace Haikakin.Controllers
                         _productInfoRepo.CreateProductInfo(productInfo);
                         count++;
                     }
+                    reader.Close();
+                    reader.Dispose();
                 }
             }
 
-            return Ok(new { message = $"Add count:{count}, Duplicate count:{duplicate}" });
+            return Ok(new { message = $"新增個數:{count}, 重複個數:{duplicate}" });
         }
 
         /// <summary>
@@ -120,7 +121,8 @@ namespace Haikakin.Controllers
         /// <param name="serial"></param>
         /// <returns></returns>
         [HttpPatch("UpdateProductInfoSerial")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [Authorize(Roles = "Admin")]
         public IActionResult UpdateProductInfoSerial(int productInfoId, string serial)
@@ -129,14 +131,14 @@ namespace Haikakin.Controllers
 
             if (productInfo == null)
             {
-                return BadRequest(new { message = "不存在的ID" });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的項目" });
             }
 
             productInfo.Serial = serial;
 
             if (!_productInfoRepo.UpdateProductInfo(productInfo))
             {
-                return BadRequest(new { message = "更新失敗，請檢查值是否正確" });
+                return StatusCode(500,new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新序號錯誤" });
             }
 
             return NoContent();

@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200728121639_InitDB0728")]
-    partial class InitDB0728
+    [Migration("20200729052625_InitDB")]
+    partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -241,6 +241,10 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<int>("CancelTimes")
+                        .HasColumnName("cancel_times")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("CheckBan")
                         .HasColumnName("check_ban")
                         .HasColumnType("boolean");
@@ -319,6 +323,62 @@ namespace Haikakin.Migrations
                         .HasConstraintName("fk_product_infos_products_product_id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Haikakin.Models.User", b =>
+                {
+                    b.OwnsMany("Haikakin.Models.RefreshToken", "RefreshTokens", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnName("id")
+                                .HasColumnType("integer")
+                                .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                            b1.Property<DateTime>("Created")
+                                .HasColumnName("created")
+                                .HasColumnType("timestamp without time zone");
+
+                            b1.Property<string>("CreatedByIp")
+                                .HasColumnName("created_by_ip")
+                                .HasColumnType("text");
+
+                            b1.Property<DateTime>("Expires")
+                                .HasColumnName("expires")
+                                .HasColumnType("timestamp without time zone");
+
+                            b1.Property<string>("ReplacedByToken")
+                                .HasColumnName("replaced_by_token")
+                                .HasColumnType("text");
+
+                            b1.Property<DateTime?>("Revoked")
+                                .HasColumnName("revoked")
+                                .HasColumnType("timestamp without time zone");
+
+                            b1.Property<string>("RevokedByIp")
+                                .HasColumnName("revoked_by_ip")
+                                .HasColumnType("text");
+
+                            b1.Property<string>("Token")
+                                .HasColumnName("token")
+                                .HasColumnType("text");
+
+                            b1.Property<int>("UserId")
+                                .HasColumnName("user_id")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("Id")
+                                .HasName("pk_refresh_token");
+
+                            b1.HasIndex("UserId")
+                                .HasName("ix_refresh_token_user_id");
+
+                            b1.ToTable("RefreshToken");
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId")
+                                .HasConstraintName("fk_refresh_token_users_user_id");
+                        });
                 });
 #pragma warning restore 612, 618
         }
