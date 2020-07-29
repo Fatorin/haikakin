@@ -370,7 +370,7 @@ namespace Haikakin.Controllers
         private bool SendMail(string uId, string userEmail)
         {
             var titleText = "Haikakin 會員驗證信";
-            var mailUrl = $"https://haikakin.com/emailcheck/?uid={uId}&email={userEmail}";
+            var mailUrl = $"http://localhost:4200/mailverifcation?uid={uId}&email={userEmail}";
             var titleBody = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
 
             RestClient client = new RestClient();

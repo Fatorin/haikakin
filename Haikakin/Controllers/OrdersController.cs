@@ -221,7 +221,11 @@ namespace Haikakin.Controllers
             //orderInfo不用更新
             foreach (OrderInfo orderInfo in orderInfos)
             {
-                var productInfos = _productInfoRepo.GetProductInfos().Where(o => o.OrderInfoId == orderInfo.OrderInfoId).ToList();
+                var productInfos = _productInfoRepo
+                    .GetProductInfos()
+                    .Where(o => o.OrderInfoId == orderInfo.OrderInfoId)
+                    .Where(o => o.ProductId == orderInfo.ProductId)
+                    .ToList();
 
                 foreach (ProductInfo productInfo in productInfos)
                 {
@@ -280,7 +284,11 @@ namespace Haikakin.Controllers
             _orderRepo.UpdateOrder(orderObj);
             foreach (OrderInfo orderInfo in orderObj.OrderInfos)
             {
-                var productInfos = _productInfoRepo.GetProductInfos().Where(o => o.OrderInfoId == orderInfo.OrderInfoId).ToList();
+                var productInfos = _productInfoRepo
+                    .GetProductInfos()
+                    .Where(o => o.OrderInfoId == orderInfo.OrderInfoId)
+                    .Where(o => o.ProductId == orderInfo.ProductId)
+                    .ToList();
 
                 foreach (ProductInfo productInfo in productInfos)
                 {
