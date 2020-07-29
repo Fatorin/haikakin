@@ -87,6 +87,7 @@ namespace Haikakin.Migrations
                     last_login_time = table.Column<DateTime>(nullable: false),
                     create_time = table.Column<DateTime>(nullable: false),
                     login_type = table.Column<int>(nullable: false),
+                    cancel_times = table.Column<int>(nullable: false),
                     check_ban = table.Column<bool>(nullable: false)
                 },
                 constraints: table =>

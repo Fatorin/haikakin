@@ -20,7 +20,7 @@ namespace Haikakin.Repository
 
         public int CreateOrder(Order order)
         {
-            var db =_db.Orders.Add(order);
+            var db = _db.Orders.Add(order);
             _db.SaveChanges();
             return db.Entity.OrderId;
         }
@@ -31,9 +31,13 @@ namespace Haikakin.Repository
             return Save();
         }
 
-        public Order GetOrder(int OrderId)
+        public Order GetOrder(int orderId)
         {
-            return _db.Orders.FirstOrDefault(o => o.OrderId == OrderId);
+            var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            var orderInfos = _db.OrderInfos.Where(o => o.OrderId == orderId).ToList();
+            if (order == null) return order;
+            order.OrderInfos = orderInfos;
+            return order;
         }
 
         public ICollection<Order> GetOrders()
@@ -43,7 +47,7 @@ namespace Haikakin.Repository
 
         public ICollection<Order> GetOrdersInUser(int userId)
         {
-            return _db.Orders.Include(o => o.UserId).Where(u => u.UserId == userId).ToList();
+            return _db.Orders.Where(u => u.UserId == userId).ToList();
         }
 
         public bool OrderExists(int id)

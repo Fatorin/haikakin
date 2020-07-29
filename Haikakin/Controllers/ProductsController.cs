@@ -50,7 +50,7 @@ namespace Haikakin.Controllers
         /// <param name="productId"> The id of the product</param>
         /// <returns></returns>
         [AllowAnonymous]
-        [HttpGet("GetProduct")]
+        [HttpGet("{productId:int}", Name = "GetProduct")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductDto))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         public IActionResult GetProduct(int productId)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using AutoMapper;
 using Haikakin.Models;
@@ -17,14 +18,16 @@ namespace Haikakin.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
+        private IUserRepository _userRepo;
         private IOrderRepository _orderRepo;
         private IOrderInfoRepository _orderInfoRepo;
         private IProductRepository _productRepo;
         private IProductInfoRepository _productInfoRepo;
         private readonly IMapper _mapper;
 
-        public OrdersController(IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper)
+        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper)
         {
+            _userRepo = userRepo;
             _orderRepo = orderRepo;
             _orderInfoRepo = orderInfoRepo;
             _productRepo = productRepo;
@@ -60,8 +63,7 @@ namespace Haikakin.Controllers
         /// <returns></returns>
         [HttpGet("{orderId:int}", Name = "GetOrder")]
         [ProducesResponseType(200, Type = typeof(OrderDto))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
         public IActionResult GetOrder(int orderId)
         {
@@ -69,7 +71,7 @@ namespace Haikakin.Controllers
 
             if (obj == null)
             {
-                return NotFound();
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單不存在" });
             }
 
             var objDto = _mapper.Map<OrderDto>(obj);
@@ -86,6 +88,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Order))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos)
@@ -102,6 +105,22 @@ namespace Haikakin.Controllers
             if (orderDtos == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
+            }
+            //檢查用戶是否存在
+            var user = _userRepo.GetUser(userId);
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶不存在" });
+            }
+            //檢查是不是被BAN
+            if (!user.EmailVerity || !user.PhoneNumberVerity)
+            {
+                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "此用戶尚未認證" });
+            }
+            //檢查是不是被BAN
+            if (user.CheckBan)
+            {
+                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "此用戶已被黑名單" });
             }
             //依序檢查商品剩餘數量並計算總價錢
             foreach (OrderCreateDto dto in orderDtos)
@@ -123,7 +142,6 @@ namespace Haikakin.Controllers
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "超過最大購買限制" });
                 }
-
                 //商品數量錯誤
                 if (dto.OrderCount == 0)
                 {
@@ -203,7 +221,9 @@ namespace Haikakin.Controllers
             //orderInfo不用更新
             foreach (OrderInfo orderInfo in orderInfos)
             {
-                foreach (ProductInfo productInfo in orderInfo.ProductInfos)
+                var productInfos = _productInfoRepo.GetProductInfos().Where(o => o.OrderInfoId == orderInfo.OrderInfoId).ToList();
+
+                foreach (ProductInfo productInfo in productInfos)
                 {
                     //訂單改成鎖定
                     productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Used;
@@ -260,7 +280,9 @@ namespace Haikakin.Controllers
             _orderRepo.UpdateOrder(orderObj);
             foreach (OrderInfo orderInfo in orderObj.OrderInfos)
             {
-                foreach (ProductInfo productInfo in orderInfo.ProductInfos)
+                var productInfos = _productInfoRepo.GetProductInfos().Where(o => o.OrderInfoId == orderInfo.OrderInfoId).ToList();
+
+                foreach (ProductInfo productInfo in productInfos)
                 {
                     productInfo.OrderInfoId = null;
                     productInfo.LastUpdateTime = DateTime.UtcNow;
@@ -270,7 +292,16 @@ namespace Haikakin.Controllers
                 }
             }
 
-            return Ok(orderObj);
+            //計算器單次數，如果超過就吃BAN
+            var user = _userRepo.GetUser(orderObj.UserId);
+            user.CancelTimes++;
+            if (user.CancelTimes >= 3)
+            {
+                user.CheckBan = true;
+            }
+            _userRepo.UpdateUser(user);
+
+            return Ok();
         }
 
         /// <summary>

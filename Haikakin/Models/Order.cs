@@ -25,6 +25,7 @@ namespace Haikakin.Models
         [Required]
         [ForeignKey("UserId")]
         public int UserId { get; set; }
+
         public ICollection<OrderInfo> OrderInfos { get; set; }
     }
 }

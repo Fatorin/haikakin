@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200729015028_InitDB")]
+    [Migration("20200729052625_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -240,6 +240,10 @@ namespace Haikakin.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'10001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<int>("CancelTimes")
+                        .HasColumnName("cancel_times")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("CheckBan")
                         .HasColumnName("check_ban")

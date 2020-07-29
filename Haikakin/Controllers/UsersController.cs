@@ -315,7 +315,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [HttpGet("EmailVerity")]
+        [HttpPost("EmailVerity")]
         public IActionResult EmailVerity([FromBody] EmailVerityModel model)
         {
             if (model == null)
