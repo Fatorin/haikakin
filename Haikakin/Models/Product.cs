@@ -13,7 +13,7 @@ namespace Haikakin.Models
         [Required]
         public string ProductName { get; set; }
         [Required]
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public bool CanBuy { get; set; }
         public int Stock { get; set; }
         public byte[] Image { get; set; }

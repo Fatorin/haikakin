@@ -11,7 +11,7 @@ namespace Haikakin.Models.Dtos
     {
         public int ProductId { get; set; }
         public string ProductName { get; set; }
-        public double Price { get; set; }
+        public decimal Price { get; set; }
         public bool CanBuy { get; set; }
         public int Stock { get; set; }
         public byte[] Image { get; set; }

@@ -95,7 +95,7 @@ namespace Haikakin.Controllers
         public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos)
         {
             //設定初值與使用者Token確認
-            var price = 0.0;
+            decimal price = 0;
             var identity = HttpContext.User.Identity as ClaimsIdentity;
             if (identity == null)
             {
@@ -154,10 +154,10 @@ namespace Haikakin.Controllers
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "庫存不足" });
                 }
 
-                price += (product.Price) * dto.OrderCount;
+                price += product.Price * dto.OrderCount;
             }
 
-            double exchange = ExchangeParse.GetExchange();
+            decimal exchange = ExchangeParse.GetExchange();
             //產生訂單需求
             //依序將商品加入訂單
             var orderObj = new Order()
@@ -349,6 +349,13 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
+        }
+
+        [HttpGet("GetOrderFeedback")]
+        [AllowAnonymous]
+        public IActionResult GetOrderFeedback()
+        {
+            return Ok();
         }
     }
 }

@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20200729163152_InitDB.cs" />
-    <Compile Include="Migrations\20200729163152_InitDB.Designer.cs" />
+    <Compile Include="Migrations\20200730053500_InitDB.cs" />
+    <Compile Include="Migrations\20200730053500_InitDB.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 
@@ -56,13 +56,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
     <PackageReference Include="Twilio" Version="5.45.1" />
     <PackageReference Include="Twilio.AspNet.Core" Version="5.33.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="ECPay.Payment.Integration">
-      <HintPath>..\..\..\Desktop\ECPayAIO_Net-master\ECPay.Payment.Integration.dll</HintPath>
-      <Private>true</Private>
-    </Reference>
   </ItemGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

@@ -9,7 +9,7 @@ namespace Haikakin.Extension
 {
     public static class ExchangeParse
     {
-        public static double GetExchange()
+        public static decimal GetExchange()
         {
             try
             {
@@ -23,11 +23,11 @@ namespace Haikakin.Extension
                 foreach (var node in nodes)
                 {
                     limit++;
-                    if (limit == 2) return double.Parse(node.InnerText);
+                    if (limit == 2) return decimal.Parse(node.InnerText);
                 }
-                return 0.00;
+                return 0;
             }
-            catch (Exception)
+            catch (WebException)
             {
                 return 0;
             }

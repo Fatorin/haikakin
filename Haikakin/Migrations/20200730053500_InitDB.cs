@@ -18,11 +18,11 @@ namespace Haikakin.Migrations
                     order_create_time = table.Column<DateTime>(nullable: false),
                     order_last_update_time = table.Column<DateTime>(nullable: false),
                     order_status = table.Column<int>(nullable: false),
-                    order_price = table.Column<double>(nullable: false),
+                    order_price = table.Column<decimal>(nullable: false),
                     order_pay_way = table.Column<int>(nullable: false),
                     order_pay_serial = table.Column<int>(nullable: false),
                     order_check_code = table.Column<string>(nullable: true),
-                    exchange = table.Column<double>(nullable: false),
+                    exchange = table.Column<decimal>(nullable: false),
                     user_id = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
@@ -38,7 +38,7 @@ namespace Haikakin.Migrations
                         .Annotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     product_name = table.Column<string>(nullable: false),
-                    price = table.Column<double>(nullable: false),
+                    price = table.Column<decimal>(nullable: false),
                     can_buy = table.Column<bool>(nullable: false),
                     stock = table.Column<int>(nullable: false),
                     image = table.Column<byte[]>(nullable: true),

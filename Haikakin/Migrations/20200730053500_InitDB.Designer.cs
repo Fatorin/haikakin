@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200729163152_InitDB")]
+    [Migration("20200730053500_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,9 +30,9 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
-                    b.Property<double>("Exchange")
+                    b.Property<decimal>("Exchange")
                         .HasColumnName("exchange")
-                        .HasColumnType("double precision");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("OrderCheckCode")
                         .HasColumnName("order_check_code")
@@ -54,9 +54,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_pay_way")
                         .HasColumnType("integer");
 
-                    b.Property<double>("OrderPrice")
+                    b.Property<decimal>("OrderPrice")
                         .HasColumnName("order_price")
-                        .HasColumnType("double precision");
+                        .HasColumnType("numeric");
 
                     b.Property<int>("OrderStatus")
                         .HasColumnName("order_status")
@@ -143,9 +143,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("limit")
                         .HasColumnType("integer");
 
-                    b.Property<double>("Price")
+                    b.Property<decimal>("Price")
                         .HasColumnName("price")
-                        .HasColumnType("double precision");
+                        .HasColumnType("numeric");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
