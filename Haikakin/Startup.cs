@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.AspNetCore.Http.Features;
 using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace Haikakin
 {
@@ -111,7 +112,12 @@ namespace Haikakin
                 options.MultipartBodyLengthLimit = 10485760;
             });
             services.AddControllers()
-                .AddNewtonsoftJson(opt => opt.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore);
+                .AddNewtonsoftJson(opt =>
+                {
+                    opt.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    //有NULL值時不回傳，如有異常再拿掉
+                    opt.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

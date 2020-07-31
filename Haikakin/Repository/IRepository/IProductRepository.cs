@@ -11,15 +11,15 @@ namespace Haikakin.Repository.IRepository
     {
         ICollection<Product> GetProducts();
 
-        Product GetProduct(int ProductId);
+        Product GetProduct(int productId);
 
         bool ProductExists(int id);
 
-        bool CreateProduct(Product Product);
+        bool CreateProduct(Product product);
 
-        bool UpdateProduct(Product Product);
+        bool UpdateProduct(Product product);
 
-        bool DeleteProduct(Product Product);
+        bool DeleteProduct(Product product);
 
         bool Save();
     }

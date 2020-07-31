@@ -21,7 +21,7 @@ namespace Haikakin.Models
         public enum OrderPayWayEnum { None, GooglePay, ApplePay, LinePay, CVSBarCode, CreditCard, ATM, WebATM }
         [Required]
         public OrderPayWayEnum OrderPayWay { get; set; }
-        public int OrderPaySerial { get; set; }
+        public string OrderPaySerial { get; set; }
         public string OrderCheckCode { get; set; }
         public decimal Exchange { get; set; }
         [Required]

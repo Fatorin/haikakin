@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Haikakin.Migrations
 {
-    public partial class InitDB : Migration
+    public partial class InitDb : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -20,7 +20,7 @@ namespace Haikakin.Migrations
                     order_status = table.Column<int>(nullable: false),
                     order_price = table.Column<decimal>(nullable: false),
                     order_pay_way = table.Column<int>(nullable: false),
-                    order_pay_serial = table.Column<int>(nullable: false),
+                    order_pay_serial = table.Column<string>(nullable: true),
                     order_check_code = table.Column<string>(nullable: true),
                     exchange = table.Column<decimal>(nullable: false),
                     user_id = table.Column<int>(nullable: false)

@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200730053500_InitDB")]
-    partial class InitDB
+    [Migration("20200731061307_InitDb")]
+    partial class InitDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -46,9 +46,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("OrderPaySerial")
+                    b.Property<string>("OrderPaySerial")
                         .HasColumnName("order_pay_serial")
-                        .HasColumnType("integer");
+                        .HasColumnType("text");
 
                     b.Property<int>("OrderPayWay")
                         .HasColumnName("order_pay_way")

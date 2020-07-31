@@ -16,7 +16,6 @@ namespace Haikakin.Models.Dtos
         public byte[] Image { get; set; }
         public string Description { get; set; }
         public int Limit { get; set; }
-        public DateTime LastUpdateTime { get; set; }
         public int ItemType { get; set; }
         public int ItemOrder { get; set; }
     }

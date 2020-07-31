@@ -18,11 +18,11 @@ namespace Haikakin.Repository
             _db = db;
         }
 
-        public int CreateOrder(Order order)
+        public Order CreateOrder(Order order)
         {
             var db = _db.Orders.Add(order);
             _db.SaveChanges();
-            return db.Entity.OrderId;
+            return db.Entity;
         }
 
         public bool DeleteOrder(Order order)

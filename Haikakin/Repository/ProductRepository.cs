@@ -20,6 +20,7 @@ namespace Haikakin.Repository
 
         public bool CreateProduct(Product product)
         {
+            product.LastUpdateTime = DateTime.UtcNow;
             _db.Products.Add(product);
             return Save();
         }
@@ -51,9 +52,10 @@ namespace Haikakin.Repository
             return _db.SaveChanges() >= 0 ? true : false;
         }
 
-        public bool UpdateProduct(Product Product)
+        public bool UpdateProduct(Product product)
         {
-            _db.Products.Update(Product);
+            product.LastUpdateTime = DateTime.UtcNow;
+            _db.Products.Update(product);
             return Save();
         }
     }

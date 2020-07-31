@@ -17,7 +17,7 @@ namespace Haikakin.Repository.IRepository
 
         bool OrderExists(int id);
 
-        int CreateOrder(Order order);
+        Order CreateOrder(Order order);
 
         bool UpdateOrder(Order order);
 

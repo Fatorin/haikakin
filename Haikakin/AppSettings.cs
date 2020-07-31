@@ -17,6 +17,9 @@ namespace Haikakin
         public string UserSecret { get; set; }
         public string EmailSecret { get; set; }
         public string MailgunAPIKey { get; set; }
+        public string ECPayMerchantID { get; set; }
+        public string ECPayHashKey { get; set; }
+        public string ECPayHashIV { get; set; }
 
     }
 }

@@ -44,9 +44,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("OrderPaySerial")
+                    b.Property<string>("OrderPaySerial")
                         .HasColumnName("order_pay_serial")
-                        .HasColumnType("integer");
+                        .HasColumnType("text");
 
                     b.Property<int>("OrderPayWay")
                         .HasColumnName("order_pay_way")

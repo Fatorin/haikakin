@@ -160,6 +160,56 @@
             <param name="model"></param>
             <returns></returns>
         </member>
+        <member name="F:Haikakin.Extension.ECPay.MD5Encoder.Crypto">
+            <summary>
+            雜湊加密演算法物件。
+            </summary>
+        </member>
+        <member name="F:Haikakin.Extension.ECPay.SHA256Encoder.Crypto">
+            <summary>
+            雜湊加密演算法物件。
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.StoreExpireDate">
+            <summary>
+            超商繳費截止時間
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.Desc_1">
+            <summary>
+            交易描述1
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.Desc_2">
+            <summary>
+            交易描述2
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.Desc_3">
+            <summary>
+            交易描述3
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.Desc_4">
+            <summary>
+            交易描述4
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.PaymentInfoURL">
+            <summary>
+            Server 端回傳付款相關資訊
+            </summary>
+        </member>
+        <member name="M:Haikakin.Models.ECPayModel.ECPaymentModel.#ctor(System.String,System.Int32,System.String,System.Collections.Generic.List{System.String},System.String)">
+            <summary>
+            建立綠界訂單
+            </summary>
+            <param name="merchantTradeNo">訂單編號</param>
+            <param name="totalAmount">總金額</param>
+            <param name="tradeDesc">交易在綠界上的說明</param>
+            <param name="itemNameList">交易商品的名稱清單</param>
+            <param name="description">交易在便利商店繳費的敘述</param>
+        </member>
         <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">
             流水號
         </member>

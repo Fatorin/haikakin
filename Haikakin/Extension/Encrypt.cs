@@ -6,12 +6,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Haikakin.Extension
 {
     public static class Encrypt
     {
-        public static string HMACSHA256(this string message,string key)
+        public static string HMACSHA256(this string message, string key)
         {
             var encoding = new System.Text.UTF8Encoding();
             byte[] keyByte = encoding.GetBytes(key);
@@ -22,6 +23,5 @@ namespace Haikakin.Extension
                 return BitConverter.ToString(hashMessage).Replace("-", "").ToLower();
             }
         }
-
     }
 }

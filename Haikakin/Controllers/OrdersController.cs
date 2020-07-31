@@ -2,14 +2,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Policy;
+using System.Text;
 using AutoMapper;
 using Haikakin.Extension;
+using Haikakin.Extension.ECPay;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
+using Haikakin.Models.ECPayModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using static Haikakin.Models.Order;
 
 namespace Haikakin.Controllers
@@ -25,8 +30,9 @@ namespace Haikakin.Controllers
         private IProductRepository _productRepo;
         private IProductInfoRepository _productInfoRepo;
         private readonly IMapper _mapper;
+        private AppSettings _appSettings;
 
-        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper)
+        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings)
         {
             _userRepo = userRepo;
             _orderRepo = orderRepo;
@@ -34,6 +40,7 @@ namespace Haikakin.Controllers
             _productRepo = productRepo;
             _productInfoRepo = productInfoRepo;
             _mapper = mapper;
+            _appSettings = appSettings.Value;
         }
 
         /// <summary>
@@ -124,6 +131,8 @@ namespace Haikakin.Controllers
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "此用戶已被黑名單" });
             }
             //依序檢查商品剩餘數量並計算總價錢
+            //紀錄商品名稱
+            var itemsNameList = new List<string>();
             foreach (OrderCreateDto dto in orderDtos)
             {
                 //檢查是否有該商品
@@ -155,11 +164,11 @@ namespace Haikakin.Controllers
                 }
 
                 price += product.Price * dto.OrderCount;
+                itemsNameList.Add($"{product.ProductName} x {dto.OrderCount}");
             }
-
+            //用爬蟲抓匯率
             decimal exchange = ExchangeParse.GetExchange();
-            //產生訂單需求
-            //依序將商品加入訂單
+            //產生訂單物件
             var orderObj = new Order()
             {
                 OrderCreateTime = DateTime.UtcNow,
@@ -167,26 +176,35 @@ namespace Haikakin.Controllers
                 OrderPayWay = OrderPayWayEnum.None,
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderLastUpdateTime = DateTime.UtcNow,
-                OrderPaySerial = 0,
                 Exchange = exchange,
                 UserId = userId,
             };
-
-            var orderId = _orderRepo.CreateOrder(orderObj);
-            //產生訂單物件
+            //DB建立訂單物件(不含訂單編號與檢查碼)
+            var orderCreatedObj = _orderRepo.CreateOrder(orderObj);
+            //產生訂單詳細資訊
             foreach (OrderCreateDto dto in orderDtos)
             {
                 OrderInfo orderInfo = new OrderInfo()
                 {
                     ProductId = dto.ProductId,
-                    OrderId = orderId,
+                    OrderId = orderCreatedObj.OrderId,
                     Count = dto.OrderCount,
                     OrderTime = DateTime.UtcNow,
                 };
                 _orderInfoRepo.CreateOrderInfo(orderInfo);
             }
 
-            return CreatedAtRoute("GetOrder", new { version = HttpContext.GetRequestedApiVersion().ToString(), orderId = orderObj.OrderId }, orderObj);
+            //產生綠界訂單
+            var ecPayNo = $"ecPay{orderCreatedObj.OrderId}";
+            ECPaymentModel model = new ECPaymentModel(ecPayNo, decimal.ToInt32(orderCreatedObj.OrderPrice), "數位商品訂單", itemsNameList, "數位商品");
+            var postModel = new ECPaymentPostModel(model);
+            model.CheckMacValue = ECPayCheckValue.BuildCheckMacValue(postModel.PostValue, _appSettings.ECPayHashKey, _appSettings.ECPayHashIV, 1);
+            //更新訂單的訂單編號與檢查碼
+            orderCreatedObj.OrderPaySerial = ecPayNo;
+            orderCreatedObj.OrderCheckCode = model.CheckMacValue;
+            _orderRepo.UpdateOrder(orderCreatedObj);
+
+            return StatusCode(201, model);
         }
 
         /// <summary>
@@ -195,7 +213,7 @@ namespace Haikakin.Controllers
         /// <param name="orderDto"></param>
         /// <returns></returns>
         [HttpPatch("FinishOrder")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ECPaymentModel))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [AllowAnonymous]
@@ -249,7 +267,7 @@ namespace Haikakin.Controllers
             }
 
             //沒問題就發送序號
-            return NoContent();
+            return Ok();
         }
 
         /// <summary>
@@ -303,7 +321,7 @@ namespace Haikakin.Controllers
                 }
             }
 
-            //計算器單次數，如果超過就吃BAN
+            //計算棄單次數，如果超過就吃BAN
             var user = _userRepo.GetUser(orderObj.UserId);
             user.CancelTimes++;
             if (user.CancelTimes >= 3)
@@ -349,13 +367,6 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
-        }
-
-        [HttpGet("GetOrderFeedback")]
-        [AllowAnonymous]
-        public IActionResult GetOrderFeedback()
-        {
-            return Ok();
         }
     }
 }
