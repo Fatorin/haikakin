@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Google.Apis.Auth;
+using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
@@ -247,7 +248,9 @@ namespace Haikakin.Controllers
             };
 
             //補寄信流程
-            SendMail($"{user.UserId}", user.Email);
+            SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
+            string[] mailInfos = { $"{user.UserId}", user.Email };
+            service.SendMail(SendMailService.SendAction.UserEmail, mailInfos);
 
             return Ok();
         }
@@ -365,29 +368,6 @@ namespace Haikakin.Controllers
             }
 
             return BadRequest(new { message = "Unknown Error." });
-        }
-
-        private bool SendMail(string uId, string userEmail)
-        {
-            var titleText = "Haikakin 會員驗證信";
-            var mailUrl = $"http://localhost:4200/mailverifcation?uid={uId}&email={userEmail}";
-            var titleBody = $"親愛的使用者，你的信箱驗證網址為: {mailUrl}";
-
-            RestClient client = new RestClient();
-            client.BaseUrl = new Uri("https://api.mailgun.net/v3");
-            client.Authenticator =
-                new HttpBasicAuthenticator("api",
-                                            _appSettings.MailgunAPIKey);
-            RestRequest request = new RestRequest();
-            request.AddParameter("domain", "mail.haikakin.com", ParameterType.UrlSegment);
-            request.Resource = "{domain}/messages";
-            request.AddParameter("from", "Haikakin Service <service@mail.haikakin.com>");
-            request.AddParameter("to", $"{userEmail}");
-            request.AddParameter("subject", titleText);
-            request.AddParameter("text", titleBody);
-            request.Method = Method.POST;
-            var response = client.Execute(request);
-            return response.IsSuccessful;
         }
 
         //Token新機制

@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using RestSharp;
+using RestSharp.Authenticators;
 using static Haikakin.Models.Order;
 
 namespace Haikakin.Controllers
@@ -367,6 +369,6 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
-        }
+        }        
     }
 }
