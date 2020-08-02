@@ -7,6 +7,7 @@ using Google.Apis.Auth;
 using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
+using Haikakin.Models.MailModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -67,7 +68,7 @@ namespace Haikakin.Controllers
 
             if (user == null)
             {
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存的使用者" });
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
             }
 
             user.Password = "";
@@ -249,8 +250,10 @@ namespace Haikakin.Controllers
 
             //補寄信流程
             SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
-            string[] mailInfos = { $"{user.UserId}", user.Email };
-            service.SendMail(SendMailService.SendAction.UserEmail, mailInfos);
+            EmailAccount mailModel = new EmailAccount{ UserId = $"{user.UserId}", UserName = user.Username, Email = user.Email };
+            if (!service.AccountMailBuild(mailModel)) {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
+            };
 
             return Ok();
         }
@@ -367,7 +370,7 @@ namespace Haikakin.Controllers
                 return Ok();
             }
 
-            return BadRequest(new { message = "Unknown Error." });
+            return BadRequest(new { message = "未知的錯誤" });
         }
 
         //Token新機制

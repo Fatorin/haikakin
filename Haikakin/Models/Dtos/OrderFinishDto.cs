@@ -8,10 +8,9 @@ using static Haikakin.Models.Order;
 
 namespace Haikakin.Models.Dtos
 {
-    public class OrderUpdateDto
+    public class OrderFinishDto
     {
         public int OrderId { get; set; }
-        public int OrderPaySerial { get; set; }
-        public OrderPayWayEnum OrderPay { get; set; }
+        public string OrderPaySerial { get; set; }
     }
 }

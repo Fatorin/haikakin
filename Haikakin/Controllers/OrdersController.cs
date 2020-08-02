@@ -10,6 +10,8 @@ using Haikakin.Extension.ECPay;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Models.ECPayModel;
+using Haikakin.Models.MailModel;
+using Haikakin.Models.OrderModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -72,7 +74,7 @@ namespace Haikakin.Controllers
         /// <param name="orderId"> The id of the order</param>
         /// <returns></returns>
         [HttpGet("{orderId:int}", Name = "GetOrder")]
-        [ProducesResponseType(200, Type = typeof(OrderDto))]
+        [ProducesResponseType(200, Type = typeof(OrderResponse))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
         public IActionResult GetOrder(int orderId)
@@ -84,9 +86,26 @@ namespace Haikakin.Controllers
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單不存在" });
             }
 
-            var objDto = _mapper.Map<OrderDto>(obj);
+            var orderInfoRespList = new List<OrderInfoResponse>();
+            foreach (var orderInfo in obj.OrderInfos)
+            {
+                var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
+                orderInfoRespList.Add(new OrderInfoResponse() { Name = productName, Count = orderInfo.Count, Price = decimal.ToInt32(obj.OrderPrice * orderInfo.Count) });
+            }
 
-            return Ok(objDto);
+            var orderRespModel = new OrderResponse()
+            {
+                OrderId = obj.OrderId,
+                OrderCreateTime = obj.OrderCreateTime,
+                OrderLastUpdateTime = obj.OrderLastUpdateTime,
+                OrderStatus = obj.OrderStatus,
+                OrderPayWay = obj.OrderPayWay,
+                OrderPaySerial = obj.OrderPaySerial,
+                OrderPrice = decimal.ToInt32(obj.OrderPrice),
+                OrderInfos = orderInfoRespList
+            };
+
+            return Ok(orderRespModel);
         }
 
         /// <summary>
@@ -95,7 +114,7 @@ namespace Haikakin.Controllers
         /// <param name="orderDtos"></param>
         /// <returns></returns>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Order))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ECPaymentModel))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
@@ -217,33 +236,54 @@ namespace Haikakin.Controllers
         [HttpPatch("FinishOrder")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ECPaymentModel))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [AllowAnonymous]
-        public IActionResult FinishOrder([FromBody] OrderUpdateDto orderDto)
+        public IActionResult FinishOrder([FromBody] OrderFinishDto orderDto)
         {
             if (orderDto == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料請求異常" });
             }
 
-            if (_orderRepo.GetOrder(orderDto.OrderId).OrderStatus == OrderStatusType.Over)
+            var order = _orderRepo.GetOrder(orderDto.OrderId);
+
+            if (order == null)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
+            }
+
+            if (order.OrderStatus == OrderStatusType.Over)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已結束" });
             }
 
-            if (_orderRepo.GetOrder(orderDto.OrderId).OrderStatus == OrderStatusType.Cancel)
+            if (order.OrderStatus == OrderStatusType.Cancel)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已取消" });
             }
 
             //檢查金流資訊，未實作
+            //請寫在這一塊
             //如果金流資訊錯誤則回傳失敗
+
             //獲得對應訂單並修改
-            var order = _orderRepo.GetOrder(orderDto.OrderId);
+            var user = _userRepo.GetUser(order.UserId);
             var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(orderDto.OrderId);
+
             //orderInfo不用更新
+            var emailOrderInfoList = new List<EmailOrderInfo>();
             foreach (OrderInfo orderInfo in orderInfos)
             {
+                //商品名稱語數量
+                var emailInfo = new EmailOrderInfo();
+                var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
+                var orderCount = orderInfo.Count;
+
+                emailInfo.OrderName = $"{productName} x{orderCount}";
+
+                var orderContext = new StringBuilder();
+
                 var productInfos = _productInfoRepo
                     .GetProductInfos()
                     .Where(o => o.OrderInfoId == orderInfo.OrderInfoId)
@@ -254,11 +294,16 @@ namespace Haikakin.Controllers
                 {
                     //訂單改成鎖定
                     productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Used;
-                    if (_productInfoRepo.UpdateProductInfo(productInfo))
+                    if (!_productInfoRepo.UpdateProductInfo(productInfo))
                     {
                         return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"更新資料錯誤" });
                     };
+
+                    orderContext.Append($"{productInfo.Serial}<br>");
                 }
+
+                emailInfo.OrderContext = orderContext.ToString();
+                emailOrderInfoList.Add(emailInfo);
             }
 
             order.OrderStatus = OrderStatusType.Over;
@@ -269,6 +314,13 @@ namespace Haikakin.Controllers
             }
 
             //沒問題就發送序號
+            SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
+            EmailOrderFinish mailModel = new EmailOrderFinish { UserName = user.Username, Email = user.Email, OrderId = $"{order.OrderId}", OrderItemList = emailOrderInfoList };
+            if (!service.OrderFinishMailBuild(mailModel))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常" });
+            };
+
             return Ok();
         }
 
@@ -369,6 +421,6 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
-        }        
+        }
     }
 }

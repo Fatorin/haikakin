@@ -1,18 +1,23 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Haikakin.Models;
+using Haikakin.Models.MailModel;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.Options;
 using RestSharp;
 using RestSharp.Authenticators;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net.Mail;
+using System.Net.Mime;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Haikakin.Extension
 {
     public class SendMailService
     {
-        public enum SendAction { UserEmail, OrderCreateEmail, OrderFinshEmail }
-        private readonly string _orderMailTitle = "Haikakin 訂單詳細資訊";
-        private readonly string _userMailTitle = "Haikakin 會員驗證信";
         private string _mailApiKey;
 
         public SendMailService(string APIKey)
@@ -20,32 +25,11 @@ namespace Haikakin.Extension
             _mailApiKey = APIKey;
         }
 
-        public bool SendMail(SendAction action, string[] sendInfos)
+        private bool SendMailActive(EmailModel model)
         {
-            if (sendInfos.Length <= 0)
+            if (model == null)
             {
                 return false;
-            }
-
-            var mailBody = "<html>HTML version of the body</html>";
-            var mailTilte = "";
-            var userEmail = "";
-
-            switch (action)
-            {
-                case SendAction.UserEmail:
-                    //判斷SendInfos資訊，抓取玩家ID跟Email
-                    var uId = sendInfos[0];
-                    userEmail = sendInfos[1];
-                    mailTilte = _userMailTitle;
-                    var mailUrl = $"http://localhost:4200/mailverifcation?uid={uId}&email={userEmail}";
-                    mailBody = $"<html>親愛的使用者，你的信箱驗證網址為: {mailUrl}</html>";
-                    break;
-                case SendAction.OrderCreateEmail:
-                    //判斷SendInfos資訊
-                    mailTilte = _orderMailTitle;
-                    mailBody = $"<html>親愛的使用者，你的資料如下</html>";
-                    break;
             }
 
             RestClient client = new RestClient();
@@ -56,12 +40,42 @@ namespace Haikakin.Extension
             request.AddParameter("domain", "mail.haikakin.com", ParameterType.UrlSegment);
             request.Resource = "{domain}/messages";
             request.AddParameter("from", "Haikakin Service <service@mail.haikakin.com>");
-            request.AddParameter("to", $"{userEmail}");
-            request.AddParameter("subject", mailTilte);
-            request.AddParameter("html", mailBody);
+            request.AddParameter("to", $"{model.Email}");
+            request.AddParameter("subject", model.EmailTitle);
+            request.AddParameter("html", model.EmailBody);
             request.Method = Method.POST;
             var response = client.Execute(request);
             return response.IsSuccessful;
+        }
+
+        public bool AccountMailBuild(EmailAccount model)
+        {
+            var title = "Haikakin 會員驗證信";
+            var url = $"http://localhost:4200/mailverifcation?uid={model.UserId}&email={model.Email}";
+            string body = File.ReadAllText(Path.Combine("EmailTemplates/Account.html"));
+            body = body.Replace("#username", $"{model.UserName}");
+            body = body.Replace("#url", url);
+            body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
+
+            return SendMailActive(new EmailModel(model.Email, title, body));
+        }
+
+        public bool OrderFinishMailBuild(EmailOrderFinish model)
+        {
+            var title = $"Haikakin 訂單編號:{model.OrderId} 購買完成內容";
+            string body = File.ReadAllText(Path.Combine("EmailTemplates/Order.html"));
+            var sb = new StringBuilder();
+
+            foreach(var data in model.OrderItemList)
+            {
+                sb.Append($"<tr><td id=\"itemname\">{data.OrderName}</td><td id=\"itemcontext\">{data.OrderContext}</td></tr>");
+            }
+
+            body = body.Replace("#username", model.UserName);
+            body = body.Replace("#items", sb.ToString());
+            body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
+
+            return SendMailActive(new EmailModel(model.Email, title, body));
         }
     }
 }

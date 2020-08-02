@@ -51,7 +51,7 @@ namespace Haikakin.Repository
 
         public ICollection<OrderInfo> GetOrderInfosByOrderId(int orderId)
         {
-            return _db.OrderInfos.Include(o => o.OrderId).Where(o => o.OrderId == orderId).ToList();
+            return _db.OrderInfos.Where(o => o.OrderId == orderId).ToList();
         }
 
         public bool OrderInfoExists(int id)

@@ -1,21 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
 using static Haikakin.Models.Order;
 
-namespace Haikakin.Models.Dtos
+namespace Haikakin.Models.OrderModel
 {
-    public class OrderDto
+    public class OrderResponse
     {
         public int OrderId { get; set; }
         public DateTime OrderCreateTime { get; set; }
         public DateTime OrderLastUpdateTime { get; set; }
         public OrderStatusType OrderStatus { get; set; }
-        public decimal OrderPrice { get; set; }
+        public int OrderPrice { get; set; }
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
+        public List<OrderInfoResponse> OrderInfos { get; set; }
     }
 }
