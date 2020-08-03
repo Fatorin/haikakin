@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Claims;
 using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Repository.IRepository;
@@ -18,11 +19,13 @@ namespace Haikakin.Controllers
     public class SmsController : ControllerBase
     {
         private ISmsRepository _smsRepo;
+        private IUserRepository _userRepo;
         private readonly AppSettings _appSettings;
 
-        public SmsController(ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
+        public SmsController(ISmsRepository smsRepo, IUserRepository userRepo, IOptions<AppSettings> appSettings)
         {
             _smsRepo = smsRepo;
+            _userRepo = userRepo;
             _appSettings = appSettings.Value;
         }
 
@@ -96,6 +99,54 @@ namespace Haikakin.Controllers
                 }
             }
 
+            return Ok();
+        }
+
+        [HttpPost("CheckSmsVerityCode")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult CheckSmsVerityCode(string phoneNumber, string smsCode)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            var user = _userRepo.GetUser(userId);
+
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此用戶" });
+            }
+
+            //檢查該手機號碼是否註冊過
+            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
+
+            if (smsModel == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "此號碼沒有使用過" });
+            }
+
+            if (smsModel.IsUsed)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼已註冊過" });
+            }
+
+            if (smsModel.VerityCode != smsCode)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "錯誤的驗證碼" });
+            }
+
+            smsModel.IsUsed = true;
+            _smsRepo.UpdateSmsModel(smsModel);
+            user.PhoneNumber = phoneNumber;
+            user.PhoneNumberVerity = true;
+            _userRepo.UpdateUser(user);
             return Ok();
         }
 

@@ -111,7 +111,7 @@ namespace Haikakin.Controllers
                 }
             }
 
-            return Ok(new { message = $"新增個數:{count}, 重複個數:{duplicate}" });
+            return Ok(new ErrorPack { ErrorCode = 1000, ErrorMessage = $"新增個數:{count}, 重複個數:{duplicate}" });
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace Haikakin.Controllers
 
             if (!_productInfoRepo.UpdateProductInfo(productInfo))
             {
-                return StatusCode(500,new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新序號錯誤" });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新序號錯誤" });
             }
 
             return NoContent();

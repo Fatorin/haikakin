@@ -31,7 +31,7 @@ namespace Haikakin.Repository
         }
 
 
-        public AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType,string ipAddress)
+        public AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress)
         {
             var encryptPassword = Encrypt.HMACSHA256(model.Password, _appSettings.UserSecret);
 
@@ -56,6 +56,10 @@ namespace Haikakin.Repository
             var refreshToken = generateRefreshToken(ipAddress);
 
             user.RefreshTokens.Add(refreshToken);
+            if (user.RefreshTokens.Count >= 2)
+            {
+                user.RefreshTokens.RemoveRange(0, user.RefreshTokens.Count - 1);
+            }
             user.LastLoginTime = DateTime.UtcNow;
             _db.Update(user);
             _db.SaveChanges();
@@ -76,6 +80,10 @@ namespace Haikakin.Repository
             var refreshToken = generateRefreshToken(ipAddress);
 
             user.RefreshTokens.Add(refreshToken);
+            if (user.RefreshTokens.Count >= 2)
+            { 
+                user.RefreshTokens.RemoveRange(0, user.RefreshTokens.Count - 1);
+            }
             user.LastLoginTime = DateTime.UtcNow;
             _db.Update(user);
             _db.SaveChanges();
@@ -100,6 +108,10 @@ namespace Haikakin.Repository
             refreshToken.Revoked = DateTime.UtcNow;
             refreshToken.RevokedByIp = ipAddress;
             refreshToken.ReplacedByToken = newRefreshToken.Token;
+            if (user.RefreshTokens.Count >= 2)
+            {
+                user.RefreshTokens.RemoveRange(0, user.RefreshTokens.Count - 1);
+            }
             user.RefreshTokens.Add(newRefreshToken);
             _db.Update(user);
             _db.SaveChanges();
@@ -207,7 +219,7 @@ namespace Haikakin.Repository
                     new Claim(ClaimTypes.Role,user.Role),
                     new Claim(ClaimTypes.Email,user.Email)
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(15),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
