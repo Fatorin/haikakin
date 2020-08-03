@@ -113,7 +113,6 @@ namespace Haikakin.Controllers
             }
 
             var productObj = _mapper.Map<Product>(productDto);
-
             if (!_productRepo.ProductExists(productObj.ProductId))
             {
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品" });

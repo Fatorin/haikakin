@@ -169,7 +169,7 @@ namespace Haikakin.Controllers
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "商品已下架" });
                 }
                 //超過購買限制
-                if (product.Limit != 0)
+                if (product.Limit != 0 && dto.OrderCount>= product.Limit)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "超過最大購買限制" });
                 }

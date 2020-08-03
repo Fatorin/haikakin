@@ -11,7 +11,7 @@ namespace Haikakin.HaikakinMapper
     public class HaikakinMappings : Profile
     {
 
-       public HaikakinMappings()
+        public HaikakinMappings()
         {
             CreateMap<User, UserUpdateDto>().ReverseMap();
             CreateMap<Order, OrderDto>().ReverseMap();

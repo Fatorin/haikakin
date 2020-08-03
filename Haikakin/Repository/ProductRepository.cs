@@ -55,6 +55,10 @@ namespace Haikakin.Repository
         public bool UpdateProduct(Product product)
         {
             product.LastUpdateTime = DateTime.UtcNow;
+            product.Stock = _db.ProductInfos.
+                Where(u => u.ProductId == product.ProductId).
+                Where(p => p.ProductStatus == ProductInfo.ProductStatusEnum.NotUse)
+                .Count();
             _db.Products.Update(product);
             return Save();
         }
