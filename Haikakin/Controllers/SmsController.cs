@@ -23,16 +23,12 @@ namespace Haikakin.Controllers
         private ISmsRepository _smsRepo;
         private IUserRepository _userRepo;
         private readonly AppSettings _appSettings;
-        private readonly OrderJob _orderJob;
-        private IScheduler _scheduler;
 
-        public SmsController(ISmsRepository smsRepo, IUserRepository userRepo, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler)
+        public SmsController(ISmsRepository smsRepo, IUserRepository userRepo, IOptions<AppSettings> appSettings)
         {
             _smsRepo = smsRepo;
             _userRepo = userRepo;
             _appSettings = appSettings.Value;
-            _orderJob = orderJob;
-            _scheduler = scheduler;
         }
 
         /// <summary>
@@ -153,20 +149,6 @@ namespace Haikakin.Controllers
             user.PhoneNumber = phoneNumber;
             user.PhoneNumberVerity = true;
             _userRepo.UpdateUser(user);
-            return Ok();
-        }
-
-        /// <summary>
-        /// 測試用
-        /// </summary>
-        /// <returns></returns>
-        [HttpGet("TestJob")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [AllowAnonymous]
-        public IActionResult TestJob()
-        {
-            int val = new Random().Next(0, 9999);
-            _orderJob.StartJob(_scheduler, val);
             return Ok();
         }
 

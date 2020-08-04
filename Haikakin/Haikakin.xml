@@ -106,12 +106,6 @@
             <param name="phoneNumber"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.SmsController.TestJob">
-            <summary>
-            測試用
-            </summary>
-            <returns></returns>
-        </member>
         <member name="M:Haikakin.Controllers.UsersController.GetUser(System.Int32)">
             <summary>
             要求指定用戶資料

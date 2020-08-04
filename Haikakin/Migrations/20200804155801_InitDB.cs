@@ -44,7 +44,7 @@ namespace Haikakin.Migrations
                     price = table.Column<decimal>(nullable: false),
                     can_buy = table.Column<bool>(nullable: false),
                     stock = table.Column<int>(nullable: false),
-                    image = table.Column<byte[]>(nullable: true),
+                    image_url = table.Column<string>(nullable: true),
                     description = table.Column<string>(nullable: true),
                     limit = table.Column<int>(nullable: false),
                     last_update_time = table.Column<DateTime>(nullable: false),

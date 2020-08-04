@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200804072651_InitDB")]
+    [Migration("20200804155801_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -135,9 +135,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("description")
                         .HasColumnType("text");
 
-                    b.Property<byte[]>("Image")
-                        .HasColumnName("image")
-                        .HasColumnType("bytea");
+                    b.Property<string>("ImageUrl")
+                        .HasColumnName("image_url")
+                        .HasColumnType("text");
 
                     b.Property<int>("ItemOrder")
                         .HasColumnName("item_order")

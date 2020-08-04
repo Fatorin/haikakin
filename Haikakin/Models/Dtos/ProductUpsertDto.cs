@@ -13,7 +13,7 @@ namespace Haikakin.Models.Dtos
         public string ProductName { get; set; }
         public decimal Price { get; set; }
         public bool CanBuy { get; set; }
-        public byte[] Image { get; set; }
+        public string ImageUrl { get; set; }
         public string Description { get; set; }
         public int Limit { get; set; }
         public int ItemType { get; set; }

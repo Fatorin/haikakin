@@ -158,6 +158,7 @@ namespace Haikakin
                 foreach (var desc in provider.ApiVersionDescriptions)
                     options.SwaggerEndpoint($"/swagger/{desc.GroupName}/swagger.json",
                     desc.GroupName.ToUpperInvariant());
+                options.RoutePrefix = "api/docs";
             });
 
             app.UseRouting();

@@ -33,7 +33,7 @@ namespace Haikakin.Models.OrderScheduler
 
                 var orderObj = _orderRepo.GetOrder(orderId);
                 _logger.LogInformation($"orderId={orderId}");
-                /*if (orderObj == null)
+                if (orderObj == null)
                 {
                     //return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
                 }
@@ -77,11 +77,10 @@ namespace Haikakin.Models.OrderScheduler
                 {
                     user.CheckBan = true;
                 }
-                _userRepo.UpdateUser(user);*/
+                _userRepo.UpdateUser(user);
             }
+            _logger.LogInformation("A order cancel!");
 
-            _logger.LogInformation(DateTime.UtcNow.ToString());
-            _logger.LogInformation("This is a Delay job!");
             return Task.CompletedTask;
         }
         public Task StartJob(IScheduler scheduler, int orderId)
@@ -96,7 +95,7 @@ namespace Haikakin.Models.OrderScheduler
             //use TriggerBuilder to create a Trigger
             var trigger = TriggerBuilder
             .Create()
-            .StartAt(DateTimeOffset.Now.AddSeconds(5))// start a job after 5 seconds
+            .StartAt(DateTimeOffset.Now.AddHours(1))// start a job after 5 seconds
             .Build();
             //call the scheduler.ScheduleJob
             return scheduler.ScheduleJob(jobDetails, trigger);

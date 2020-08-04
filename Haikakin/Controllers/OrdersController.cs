@@ -231,6 +231,8 @@ namespace Haikakin.Controllers
             orderCreatedObj.OrderPaySerial = ecPayNo;
             orderCreatedObj.OrderCheckCode = model.CheckMacValue;
             _orderRepo.UpdateOrder(orderCreatedObj);
+            //定時器開啟，一個小時內沒繳完費自動取消
+            _orderJob.StartJob(_scheduler, orderObj.OrderId);
 
             return StatusCode(201, model);
         }

@@ -133,9 +133,9 @@ namespace Haikakin.Migrations
                         .HasColumnName("description")
                         .HasColumnType("text");
 
-                    b.Property<byte[]>("Image")
-                        .HasColumnName("image")
-                        .HasColumnType("bytea");
+                    b.Property<string>("ImageUrl")
+                        .HasColumnName("image_url")
+                        .HasColumnType("text");
 
                     b.Property<int>("ItemOrder")
                         .HasColumnName("item_order")
