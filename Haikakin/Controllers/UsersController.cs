@@ -300,14 +300,16 @@ namespace Haikakin.Controllers
             {
                 //創帳號 回傳TOKEN
                 _userRepo.RegisterThird(userName, userEmail, LoginTypeEnum.Google);
-                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
-                return Ok(user);
+                var response = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
+                SetTokenCookie(response.RefreshToken);
+                return Ok(response);
             }
             else
             {
                 //有重複帳號回傳JWT TOEKN
-                var user = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
-                return Ok(user);
+                var response = _userRepo.AuthenticateThird(userEmail, LoginTypeEnum.Google, GetIPAddress());
+                SetTokenCookie(response.RefreshToken);
+                return Ok(response);
             }
         }
 

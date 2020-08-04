@@ -21,6 +21,9 @@ namespace Haikakin.Migrations
                     order_price = table.Column<decimal>(nullable: false),
                     order_pay_way = table.Column<int>(nullable: false),
                     order_pay_serial = table.Column<string>(nullable: true),
+                    order_ec_pay_serial = table.Column<string>(nullable: true),
+                    order_ec_pay_fee = table.Column<string>(nullable: true),
+                    order_ec_pay_limit_time = table.Column<DateTime>(nullable: false),
                     order_check_code = table.Column<string>(nullable: true),
                     exchange = table.Column<decimal>(nullable: false),
                     user_id = table.Column<int>(nullable: false)

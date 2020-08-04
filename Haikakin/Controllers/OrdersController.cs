@@ -12,11 +12,13 @@ using Haikakin.Models.Dtos;
 using Haikakin.Models.ECPayModel;
 using Haikakin.Models.MailModel;
 using Haikakin.Models.OrderModel;
+using Haikakin.Models.OrderScheduler;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Quartz;
 using RestSharp;
 using RestSharp.Authenticators;
 using static Haikakin.Models.Order;
@@ -35,8 +37,10 @@ namespace Haikakin.Controllers
         private IProductInfoRepository _productInfoRepo;
         private readonly IMapper _mapper;
         private AppSettings _appSettings;
+        private readonly OrderJob _orderJob;
+        private IScheduler _scheduler;
 
-        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings)
+        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler)
         {
             _userRepo = userRepo;
             _orderRepo = orderRepo;
@@ -45,6 +49,8 @@ namespace Haikakin.Controllers
             _productInfoRepo = productInfoRepo;
             _mapper = mapper;
             _appSettings = appSettings.Value;
+            _orderJob = orderJob;
+            _scheduler = scheduler;
         }
 
         /// <summary>
@@ -197,6 +203,7 @@ namespace Haikakin.Controllers
                 OrderPayWay = OrderPayWayEnum.None,
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderLastUpdateTime = DateTime.UtcNow,
+                OrderECPayLimitTime = DateTime.UtcNow.AddMinutes(15),
                 Exchange = exchange,
                 UserId = userId,
             };
@@ -231,51 +238,68 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 結束指定訂單，用於第三方的回傳，所以不限定使用者
         /// </summary>
-        /// <param name="orderDto"></param>
+        /// <param name=""></param>
         /// <returns></returns>
         [HttpPatch("FinishOrder")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ECPaymentModel))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [AllowAnonymous]
-        public IActionResult FinishOrder([FromBody] OrderFinishDto orderDto)
+        public IActionResult FinishOrder([FromForm] ECPaymentResponseModel ecPayModel)
         {
-            if (orderDto == null)
+            if (ecPayModel == null)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料請求異常" });
+                return BadRequest("0|資料請求異常");
             }
-
-            var order = _orderRepo.GetOrder(orderDto.OrderId);
+            //依照特店交易編號回傳資料
+            var order = _orderRepo.GetOrdersInPaySerial(ecPayModel.MerchantTradeNo);
 
             if (order == null)
             {
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
+                return BadRequest("0|查無此訂單");
             }
 
             if (order.OrderStatus == OrderStatusType.Over)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已結束" });
+                return BadRequest("0|訂單已結束");
             }
 
             if (order.OrderStatus == OrderStatusType.Cancel)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已取消" });
+                return BadRequest("0|特店訂單已取消");
             }
 
-            //檢查金流資訊，未實作
-            //請寫在這一塊
-            //如果金流資訊錯誤則回傳失敗
+            //檢查金流資訊
+            if (ecPayModel.CheckMacValue != order.OrderCheckCode)
+            {
+                return BadRequest("0|檢查碼錯誤");
+            }
+            //此為模擬付款，會直接跳過
+            if (ecPayModel.SimulatePaid == 1)
+            {
+                return Ok("1|此為模擬付款");
+            }
+
+            if (ecPayModel.TradeAmt != order.OrderPrice)
+            {
+                return BadRequest("0|金額不相符");
+            }
+
+            if (ecPayModel.RtnCode != 1)
+            {
+                return BadRequest("0|付款失敗，不進行交易");
+            }
+            //如果金流資訊錯誤則回傳失敗            
 
             //獲得對應訂單並修改
             var user = _userRepo.GetUser(order.UserId);
-            var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(orderDto.OrderId);
 
             //orderInfo不用更新
             var emailOrderInfoList = new List<EmailOrderInfo>();
-            foreach (OrderInfo orderInfo in orderInfos)
+            foreach (OrderInfo orderInfo in order.OrderInfos)
             {
-                //商品名稱語數量
+                //商品名稱與數量
                 var emailInfo = new EmailOrderInfo();
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
                 var orderCount = orderInfo.Count;
@@ -296,7 +320,8 @@ namespace Haikakin.Controllers
                     productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Used;
                     if (!_productInfoRepo.UpdateProductInfo(productInfo))
                     {
-                        return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"更新資料錯誤" });
+                        //系統更新資料異常
+                        return BadRequest("0|特店系統異常");
                     };
 
                     orderContext.Append($"{productInfo.Serial}<br>");
@@ -308,9 +333,12 @@ namespace Haikakin.Controllers
 
             order.OrderStatus = OrderStatusType.Over;
             order.OrderLastUpdateTime = DateTime.UtcNow;
+            //要將綠界編號儲存
+            order.OrderECPaySerial = ecPayModel.TradeNo;
             if (!_orderRepo.UpdateOrder(order))
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"更新資料錯誤，訂單編號{order.OrderId}" });
+                //$"更新資料錯誤，訂單編號{order.OrderId}"
+                return BadRequest("0|特店系統異常");
             }
 
             //沒問題就發送序號
@@ -318,10 +346,11 @@ namespace Haikakin.Controllers
             EmailOrderFinish mailModel = new EmailOrderFinish { UserName = user.Username, Email = user.Email, OrderId = $"{order.OrderId}", OrderItemList = emailOrderInfoList };
             if (!service.OrderFinishMailBuild(mailModel))
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常" });
+                //信箱系統掛掉
+                return BadRequest("0|特店系統異常");
             };
 
-            return Ok();
+            return Ok("1|OK");
         }
 
         /// <summary>

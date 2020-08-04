@@ -24,11 +24,11 @@
             <param name="orderDtos"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.Dtos.OrderFinishDto)">
+        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.ECPayModel.ECPaymentResponseModel)">
             <summary>
             結束指定訂單，用於第三方的回傳，所以不限定使用者
             </summary>
-            <param name="orderDto"></param>
+            <param name=""></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.CancelOrder(System.Int32)">
@@ -104,6 +104,12 @@
             簡訊驗證手機
             </summary>
             <param name="phoneNumber"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.SmsController.TestJob">
+            <summary>
+            測試用
+            </summary>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.UsersController.GetUser(System.Int32)">
@@ -209,6 +215,11 @@
             <param name="tradeDesc">交易在綠界上的說明</param>
             <param name="itemNameList">交易商品的名稱清單</param>
             <param name="description">交易在便利商店繳費的敘述</param>
+        </member>
+        <member name="P:Haikakin.Models.ECPayModel.ECPaymentResponseModel.RtnCode">
+            <summary>
+            回 傳 值 時 為1 時，交易狀態為取號成功，其餘為失敗。
+            </summary>
         </member>
         <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">
             流水號

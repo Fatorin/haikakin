@@ -26,6 +26,10 @@ using Microsoft.IdentityModel.Logging;
 using Microsoft.AspNetCore.Http.Features;
 using Newtonsoft.Json;
 using System.Text.Json;
+using Quartz;
+using Quartz.Impl;
+using Haikakin.Extension;
+using Haikakin.Models.OrderScheduler;
 
 namespace Haikakin
 {
@@ -68,6 +72,13 @@ namespace Haikakin
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IProductInfoRepository, ProductInfoRepository>();
             services.AddScoped<ISmsRepository, SmsRepository>();
+
+            // 設定排程
+            var scheduler = StdSchedulerFactory.GetDefaultScheduler().GetAwaiter().GetResult();
+            scheduler.JobFactory = new OrderJobFactory(services.BuildServiceProvider());
+            services.AddSingleton(scheduler);
+            services.AddHostedService<QuartzHostedService>();
+            services.AddSingleton<OrderJob, OrderJob>();
 
             services.AddAutoMapper(typeof(HaikakinMappings));
             //防止密碼外洩
@@ -121,12 +132,15 @@ namespace Haikakin
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IApiVersionDescriptionProvider provider)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IHostApplicationLifetime applicationLifetime ,IApiVersionDescriptionProvider provider)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            applicationLifetime.ApplicationStarted.Register(OnStratUp);
+            applicationLifetime.ApplicationStopping.Register(OnShutDown);
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
@@ -159,6 +173,14 @@ namespace Haikakin
             {
                 endpoints.MapControllers();
             });
+        }
+
+        private void OnStratUp()
+        {
+        }
+
+        private void OnShutDown()
+        {
         }
     }
 }

@@ -40,6 +40,18 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_create_time")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("OrderECPayFee")
+                        .HasColumnName("order_ec_pay_fee")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OrderECPayLimitTime")
+                        .HasColumnName("order_ec_pay_limit_time")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("OrderECPaySerial")
+                        .HasColumnName("order_ec_pay_serial")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("OrderLastUpdateTime")
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");

@@ -15,6 +15,8 @@ namespace Haikakin.Repository.IRepository
 
         Order GetOrder(int orderId);
 
+        Order GetOrdersInPaySerial(string paySerial);
+
         bool OrderExists(int id);
 
         Order CreateOrder(Order order);

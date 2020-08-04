@@ -22,6 +22,9 @@ namespace Haikakin.Models
         [Required]
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
+        public string OrderECPaySerial { get; set; }
+        public string OrderECPayFee { get; set; }
+        public DateTime OrderECPayLimitTime { get; set; }
         public string OrderCheckCode { get; set; }
         public decimal Exchange { get; set; }
         [Required]

@@ -34,7 +34,16 @@ namespace Haikakin.Repository
         public Order GetOrder(int orderId)
         {
             var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            if (order == null) return order;
             var orderInfos = _db.OrderInfos.Where(o => o.OrderId == orderId).ToList();
+            order.OrderInfos = orderInfos;
+            return order;
+        }
+
+        public Order GetOrdersInPaySerial(string paySerial)
+        {
+            var order = _db.Orders.FirstOrDefault(o => o.OrderPaySerial == paySerial);
+            var orderInfos = _db.OrderInfos.Where(o => o.OrderId == order.OrderId).ToList();
             if (order == null) return order;
             order.OrderInfos = orderInfos;
             return order;
