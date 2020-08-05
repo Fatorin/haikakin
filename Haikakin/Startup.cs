@@ -11,9 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using AutoMapper;
 using Haikakin.HaikakinMapper;
-using System.Reflection;
-using System.IO;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -22,13 +19,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AspNetCoreRateLimit;
 using Microsoft.AspNetCore.Http;
-using Microsoft.IdentityModel.Logging;
 using Microsoft.AspNetCore.Http.Features;
 using Newtonsoft.Json;
-using System.Text.Json;
-using Quartz;
 using Quartz.Impl;
-using Haikakin.Extension;
 using Haikakin.Models.OrderScheduler;
 
 namespace Haikakin
@@ -132,7 +125,7 @@ namespace Haikakin
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IHostApplicationLifetime applicationLifetime ,IApiVersionDescriptionProvider provider)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime, IApiVersionDescriptionProvider provider)
         {
             if (env.IsDevelopment())
             {
@@ -151,14 +144,17 @@ namespace Haikakin
 
             app.UseIpRateLimiting();
 
-            app.UseSwagger();
+            app.UseSwagger(options=>
+            {
+                options.RouteTemplate = "/api/swagger/{documentName}/swagger.json";
+            });
 
             app.UseSwaggerUI(options =>
             {
+                options.RoutePrefix = "api";
                 foreach (var desc in provider.ApiVersionDescriptions)
-                    options.SwaggerEndpoint($"/swagger/{desc.GroupName}/swagger.json",
+                    options.SwaggerEndpoint($"swagger/{desc.GroupName}/swagger.json",
                     desc.GroupName.ToUpperInvariant());
-                options.RoutePrefix = "api/docs";
             });
 
             app.UseRouting();
