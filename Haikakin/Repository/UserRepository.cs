@@ -219,7 +219,7 @@ namespace Haikakin.Repository
                     new Claim(ClaimTypes.Role,user.Role),
                     new Claim(ClaimTypes.Email,user.Email)
                 }),
-                Expires = DateTime.UtcNow.AddMinutes(30),
+                Expires = DateTime.UtcNow.AddMinutes(15),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 

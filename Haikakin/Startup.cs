@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Newtonsoft.Json;
 using Quartz.Impl;
 using Haikakin.Models.OrderScheduler;
+using System.Collections.Generic;
 
 namespace Haikakin
 {
@@ -53,7 +54,27 @@ namespace Haikakin
             // Rate Limit configuration ³]©w
             services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
-            services.AddCors();
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder.SetIsOriginAllowed(x => true)
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                    });
+
+                options.AddPolicy("DepolyPolicy",
+                    builder =>
+                    {
+                        builder.SetIsOriginAllowed(MyIsOriginAllowed)
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                    });
+
+            });
 
             services.AddDbContext<ApplicationDbContext>(options => options
             .UseNpgsql(Configuration.GetConnectionString("DefaultConnection"))
@@ -115,6 +136,7 @@ namespace Haikakin
             {
                 options.MultipartBodyLengthLimit = 10485760;
             });
+
             services.AddControllers()
                 .AddNewtonsoftJson(opt =>
                 {
@@ -144,7 +166,7 @@ namespace Haikakin
 
             app.UseIpRateLimiting();
 
-            app.UseSwagger(options=>
+            app.UseSwagger(options =>
             {
                 options.RouteTemplate = "/api/swagger/{documentName}/swagger.json";
             });
@@ -157,11 +179,12 @@ namespace Haikakin
                     desc.GroupName.ToUpperInvariant());
             });
 
+            app.UseCookiePolicy();
+
             app.UseRouting();
-            app.UseCors(x => x
-                .AllowAnyOrigin()
-                .AllowAnyMethod().
-                AllowAnyHeader());
+
+            app.UseCors("DepolyPolicy");
+
             app.UseAuthentication();
 
             app.UseAuthorization();
@@ -178,6 +201,16 @@ namespace Haikakin
 
         private void OnShutDown()
         {
+        }
+
+        private static bool MyIsOriginAllowed(string origin)
+        {
+            var allowRange = new List<string>() {
+            "http://www.haikakin.com",
+            "http://localhost",
+            "https://localhost",
+            "https://postgate.ecpay.com.tw" };
+            return allowRange.Contains(origin);
         }
     }
 }
