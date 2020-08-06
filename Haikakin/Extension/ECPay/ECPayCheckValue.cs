@@ -12,7 +12,7 @@ namespace Haikakin.Extension.ECPay
         {
             string szCheckMacValue = String.Empty;
             // 產生檢查碼。
-            szCheckMacValue = String.Format("HashKey={0}{1}&HashIV={2}", hashKey, parameters, hashIV);
+            szCheckMacValue = String.Format("HashKey={0}&{1}&HashIV={2}", hashKey, parameters, hashIV);
             szCheckMacValue = HttpUtility.UrlEncode(szCheckMacValue).ToLower();
             if (encryptType == 1)
             {
