@@ -133,7 +133,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.UsersController.RevokeToken(System.String)">
+        <member name="M:Haikakin.Controllers.UsersController.RevokeToken(Haikakin.Models.UserModel.RevokeTokenRequest)">
             <summary>
             撤銷Token用
             </summary>

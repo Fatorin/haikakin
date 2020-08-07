@@ -8,6 +8,7 @@ using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Models.MailModel;
+using Haikakin.Models.UserModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -175,10 +176,10 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AuthenticateResponse))]
-        public IActionResult RevokeToken([FromBody] string requestToken)
+        public IActionResult RevokeToken([FromBody] RevokeTokenRequest model)
         {
             // accept token from request body or cookie
-            var token = requestToken ?? Request.Cookies["refreshToken"];
+            var token = model.Token ?? Request.Cookies["refreshToken"];
 
             if (string.IsNullOrEmpty(token))
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "輸入資料錯誤" });

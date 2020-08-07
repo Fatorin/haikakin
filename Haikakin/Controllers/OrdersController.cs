@@ -277,11 +277,11 @@ namespace Haikakin.Controllers
             {
                 return BadRequest("0|檢查碼錯誤");
             }
-            //此為模擬付款，會直接跳過
-            if (ecPayModel.SimulatePaid == 1)
+            //此為模擬付款，會直接跳過 先暫時拿掉用於測試
+            /*if (ecPayModel.SimulatePaid == 1)
             {
                 return Ok("1|此為模擬付款");
-            }
+            }*/
 
             if (ecPayModel.TradeAmt != order.OrderPrice)
             {
