@@ -4,6 +4,13 @@
         <name>Haikakin</name>
     </assembly>
     <members>
+        <member name="M:Haikakin.Controllers.AdminController.AuthenticateAdmin(Haikakin.Models.AuthenticationModel)">
+             <summary>
+            驗證身份並獲得Token
+             </summary>
+             <param name="model"></param>
+             <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrders">
             <summary>
             獲得所有訂單，只有Admin可用

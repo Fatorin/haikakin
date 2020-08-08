@@ -30,7 +30,7 @@ namespace Haikakin.Controllers
         private ISmsRepository _smsRepo;
         private readonly AppSettings _appSettings;
 
-        public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings, IMapper mapper)
+        public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
         {
             _userRepo = userRepo;
             _smsRepo = smsRepo;
