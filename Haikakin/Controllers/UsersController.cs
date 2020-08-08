@@ -28,7 +28,6 @@ namespace Haikakin.Controllers
     {
         private IUserRepository _userRepo;
         private ISmsRepository _smsRepo;
-        private readonly IMapper _mapper;
         private readonly AppSettings _appSettings;
 
         public UsersController(IUserRepository userRepo, ISmsRepository smsRepo, IOptions<AppSettings> appSettings, IMapper mapper)
@@ -36,7 +35,6 @@ namespace Haikakin.Controllers
             _userRepo = userRepo;
             _smsRepo = smsRepo;
             _appSettings = appSettings.Value;
-            _mapper = mapper;
         }
 
         /// <summary>
@@ -78,7 +76,7 @@ namespace Haikakin.Controllers
         }
 
         /// <summary>
-        /// 更新用戶資料
+        /// 更新用戶名稱，Admin要打完整ID才有用
         /// </summary>
         /// <param name="userDto"></param>
         /// <returns></returns>
@@ -86,8 +84,8 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [HttpPost("UpdateUser")]
-        public IActionResult UpdateUser(UserUpdateDto userDto)
+        [HttpPost("UpdateUserName")]
+        public IActionResult UpdateUserName(UserNameUpdateDto userDto)
         {
             var identity = HttpContext.User.Identity as ClaimsIdentity;
 
@@ -108,15 +106,144 @@ namespace Haikakin.Controllers
                 userDto.UserId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             }
 
-            var userObj = _mapper.Map<User>(userDto);
+            var user = _userRepo.GetUser(userDto.UserId);
 
-            if (_userRepo.UpdateUser(userObj))
+            if (user == null)
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userObj.UserId}" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
+            }
+
+            user.Username = userDto.Username;
+            if (_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
             }
 
             return NoContent();
         }
+
+        /// <summary>
+        /// 更新用戶密碼，Admin要打完整ID才有用
+        /// </summary>
+        /// <param name="userDto"></param>
+        /// <returns></returns>
+        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpPost("UpdateUserPassword")]
+        public IActionResult UpdateUserPassword(UserPasswordUpdateDto userDto)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            if (userDto == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
+            }
+
+            //如果有不是管理者則自己身ID為主，此時傳值無效
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+            if (role != "Admin")
+            {
+                userDto.UserId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            }
+
+            var user = _userRepo.GetUser(userDto.UserId);
+
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
+            }
+
+            var oldPasswordConvert = Encrypt.HMACSHA256(userDto.UserOldPassword, _appSettings.UserSecret);
+            if (oldPasswordConvert != user.Password)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "舊密碼不對" });
+            }
+
+            if (userDto.UserPassword != userDto.UserReCheckPassword)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "新密碼不一致" });
+            }
+
+            var newPassword = Encrypt.HMACSHA256(userDto.UserPassword, _appSettings.UserSecret);
+
+            user.Password = newPassword;
+            if (_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
+            }
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// 更新用戶信箱，Admin要打完整ID才有用
+        /// </summary>
+        /// <param name="userDto"></param>
+        /// <returns></returns>
+        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpPost("UpdateUserEmail")]
+        public IActionResult UpdateUserEmail(UserEmailUpdateDto userDto)
+        {
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            if (userDto == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
+            }
+
+            //如果有不是管理者則自己身ID為主，此時傳值無效
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+            if (role != "Admin")
+            {
+                userDto.UserId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            }
+
+            var user = _userRepo.GetUser(userDto.UserId);
+
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
+            }
+
+            if (user.Email == userDto.UserEmail)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "相同的信箱" });
+            }
+
+            user.EmailVerity = false;
+            user.Email = userDto.UserEmail;
+
+            if (_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
+            }
+
+            //寄驗證信
+            var service = new SendMailService(_appSettings.MailgunAPIKey);
+            EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, user.Email, EmailVerityModel.EmailVerityEnum.EmailModify);
+            if (!service.AccountMailBuild(mailModel))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
+            };
+
+            return NoContent();
+        }
+
 
         /// <summary>
         ///驗證身份並獲得Token
@@ -251,8 +378,9 @@ namespace Haikakin.Controllers
 
             //補寄信流程
             SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
-            EmailAccount mailModel = new EmailAccount{ UserId = $"{user.UserId}", UserName = user.Username, Email = user.Email };
-            if (!service.AccountMailBuild(mailModel)) {
+            EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, user.Email, EmailVerityModel.EmailVerityEnum.EmailVerity);
+            if (!service.AccountMailBuild(mailModel))
+            {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
             };
 
@@ -332,7 +460,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
             }
 
-            var user = _userRepo.GetUser(model.userId);
+            var user = _userRepo.GetUser(model.UserId);
             if (user == null)
             {
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有此用戶" });
@@ -343,13 +471,13 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱已驗證過" });
             }
 
-            if (user.UserId != model.userId || user.Email != model.userEmail)
+            if (user.UserId != model.UserId || user.Email != model.UserEmail)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶資訊不正確" });
             }
 
             //如果是要驗證
-            if (model.emailVerityAction == EmailVerityModel.EmailVerityAction.EmailVerity)
+            if (model.EmailVerityAction == EmailVerityModel.EmailVerityEnum.EmailVerity)
             {
                 user.EmailVerity = true;
                 if (!_userRepo.UpdateUser(user))
@@ -361,9 +489,12 @@ namespace Haikakin.Controllers
             }
 
             //如果是要修改
-            if (model.emailVerityAction == EmailVerityModel.EmailVerityAction.EmailModify)
+            if (model.EmailVerityAction == EmailVerityModel.EmailVerityEnum.EmailModify)
             {
-                user.Email = model.userEmail;
+                if (user.Email != model.UserEmail)
+                {
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱資訊不正確" });
+                }
                 user.EmailVerity = true;
                 if (!_userRepo.UpdateUser(user))
                 {

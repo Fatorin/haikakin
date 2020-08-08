@@ -30,7 +30,6 @@ namespace Haikakin.Repository
             _appSettings = appSettings.Value;
         }
 
-
         public AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress)
         {
             var encryptPassword = Encrypt.HMACSHA256(model.Password, _appSettings.UserSecret);

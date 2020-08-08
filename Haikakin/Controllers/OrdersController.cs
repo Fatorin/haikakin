@@ -40,9 +40,8 @@ namespace Haikakin.Controllers
         private AppSettings _appSettings;
         private readonly OrderJob _orderJob;
         private IScheduler _scheduler;
-        private readonly ILogger _logger;
 
-        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler, ILogger logger)
+        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler)
         {
             _userRepo = userRepo;
             _orderRepo = orderRepo;
@@ -53,7 +52,6 @@ namespace Haikakin.Controllers
             _appSettings = appSettings.Value;
             _orderJob = orderJob;
             _scheduler = scheduler;
-            _logger = logger;
         }
 
         /// <summary>
@@ -99,7 +97,7 @@ namespace Haikakin.Controllers
             foreach (var orderInfo in obj.OrderInfos)
             {
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
-                orderInfoRespList.Add(new OrderInfoResponse() { Name = productName, Count = orderInfo.Count, Price = decimal.ToInt32(obj.OrderPrice * orderInfo.Count) });
+                orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count));
             }
 
             var orderRespModel = new OrderResponse()
@@ -255,7 +253,7 @@ namespace Haikakin.Controllers
         {
             if (ecPayModel == null)
             {
-                _logger.LogInformation("0|資料請求異常");
+                Console.WriteLine("0|資料請求異常");
                 return BadRequest("0|資料請求異常");
             }
             //依照特店交易編號回傳資料
@@ -263,26 +261,26 @@ namespace Haikakin.Controllers
 
             if (order == null)
             {
-                _logger.LogInformation("0|查無此訂單");
+                Console.WriteLine("0|查無此訂單");
                 return BadRequest("0|查無此訂單");
             }
 
             if (order.OrderStatus == OrderStatusType.Over)
             {
-                _logger.LogInformation("0|資料請求異常");
+                Console.WriteLine("0|資料請求異常");
                 return BadRequest("0|訂單已結束");
             }
 
             if (order.OrderStatus == OrderStatusType.Cancel)
             {
-                _logger.LogInformation("0|特店訂單已取消");
+                Console.WriteLine("0|特店訂單已取消");
                 return BadRequest("0|特店訂單已取消");
             }
 
             //檢查金流資訊
             if (ecPayModel.CheckMacValue != order.OrderCheckCode)
             {
-                _logger.LogInformation("0|檢查碼錯誤");
+                Console.WriteLine("0|檢查碼錯誤");
                 return BadRequest("0|檢查碼錯誤");
             }
             //此為模擬付款，會直接跳過 先暫時拿掉用於測試
@@ -293,13 +291,13 @@ namespace Haikakin.Controllers
 
             if (ecPayModel.TradeAmt != order.OrderPrice)
             {
-                _logger.LogInformation("0|金額不相符");
+                Console.WriteLine("0|金額不相符");
                 return BadRequest("0|金額不相符");
             }
 
             if (ecPayModel.RtnCode != 1)
             {
-                _logger.LogInformation("0|金額不相符");
+                Console.WriteLine("0|金額不相符");
                 return BadRequest("0|付款失敗，不進行交易");
             }
             //如果金流資訊錯誤則回傳失敗            
@@ -333,7 +331,7 @@ namespace Haikakin.Controllers
                     if (!_productInfoRepo.UpdateProductInfo(productInfo))
                     {
                         //系統更新資料異常
-                        _logger.LogInformation("0|特店系統異常_ProductInfo更新異常");
+                        Console.WriteLine("0|特店系統異常_ProductInfo更新異常");
                         return BadRequest("0|特店系統異常");
                     };
 
@@ -351,7 +349,7 @@ namespace Haikakin.Controllers
             if (!_orderRepo.UpdateOrder(order))
             {
                 //$"更新資料錯誤，訂單編號{order.OrderId}"
-                _logger.LogInformation("0|特店系統異常_Order更新異常");
+                Console.WriteLine("0|特店系統異常_Order更新異常");
                 return BadRequest("0|特店系統異常");
             }
 
@@ -361,7 +359,7 @@ namespace Haikakin.Controllers
             if (!service.OrderFinishMailBuild(mailModel))
             {
                 //信箱系統掛掉
-                _logger.LogInformation("0|特店系統異常_信箱");
+                Console.WriteLine("0|特店系統異常_信箱");
                 return BadRequest("0|特店系統異常");
             };
 

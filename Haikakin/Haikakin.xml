@@ -113,9 +113,23 @@
             <param name="userId"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.UsersController.UpdateUser(Haikakin.Models.Dtos.UserUpdateDto)">
+        <member name="M:Haikakin.Controllers.UsersController.UpdateUserName(Haikakin.Models.Dtos.UserNameUpdateDto)">
             <summary>
-            更新用戶資料
+            更新用戶名稱，Admin要打完整ID才有用
+            </summary>
+            <param name="userDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.UpdateUserPassword(Haikakin.Models.Dtos.UserPasswordUpdateDto)">
+            <summary>
+            更新用戶密碼，Admin要打完整ID才有用
+            </summary>
+            <param name="userDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.UpdateUserEmail(Haikakin.Models.Dtos.UserEmailUpdateDto)">
+            <summary>
+            更新用戶信箱，Admin要打完整ID才有用
             </summary>
             <param name="userDto"></param>
             <returns></returns>
