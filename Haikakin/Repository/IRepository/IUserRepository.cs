@@ -12,6 +12,7 @@ namespace Haikakin.Repository.IRepository
     {
         bool IsUniqueUser(string email);
         AuthenticateResponse Authenticate(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress);
+        AuthenticateResponse AuthenticateAdmin(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress);
         AuthenticateResponse AuthenticateThird(string userEmail, LoginTypeEnum loginType, string ipAddress);
         AuthenticateResponse RefreshToken(string token, string ipAddress);
         bool RevokeToken(string token, string ipAddress);

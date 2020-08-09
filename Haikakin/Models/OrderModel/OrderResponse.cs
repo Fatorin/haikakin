@@ -16,5 +16,8 @@ namespace Haikakin.Models.OrderModel
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
         public List<OrderInfoResponse> OrderInfos { get; set; }
+        public int UserId { get; set; }
+        public string UserName { get; set; }
+        public string UserEmail { get; set; }
     }
 }

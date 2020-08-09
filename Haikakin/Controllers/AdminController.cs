@@ -22,7 +22,7 @@ using static Haikakin.Models.User;
 namespace Haikakin.Controllers
 {
     [Authorize]
-    [Route("api/v{version:apiVersion}/Users")]
+    [Route("api/v{version:apiVersion}/Admins")]
     [ApiController]
     public class AdminController : ControllerBase
     {
@@ -52,16 +52,11 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
             }
 
-            var response = _userRepo.Authenticate(model, LoginTypeEnum.Normal, GetIPAddress());
+            var response = _userRepo.AuthenticateAdmin(model, LoginTypeEnum.Normal, GetIPAddress());
 
             if (response == null)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "帳號/手機或密碼不正確" });
-            }
-
-            if (response.Role != "Admin")
-            {
-                return Forbid("Your not admin.");
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不是Admin、帳密錯誤、或是無此帳號" });
             }
 
             SetTokenCookie(response.RefreshToken);

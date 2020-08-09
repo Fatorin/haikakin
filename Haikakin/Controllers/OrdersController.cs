@@ -93,6 +93,26 @@ namespace Haikakin.Controllers
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單不存在" });
             }
 
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
+            }
+
+            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+
+            //檢查用戶是否存在
+            var user = _userRepo.GetUser(obj.UserId);
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶不存在" });
+            }
+
+            if (userId != obj.UserId && user.Role != "Admin")
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "非使用者訂單" });
+            }
+
             var orderInfoRespList = new List<OrderInfoResponse>();
             foreach (var orderInfo in obj.OrderInfos)
             {
@@ -109,7 +129,10 @@ namespace Haikakin.Controllers
                 OrderPayWay = obj.OrderPayWay,
                 OrderPaySerial = obj.OrderPaySerial,
                 OrderPrice = decimal.ToInt32(obj.OrderPrice),
-                OrderInfos = orderInfoRespList
+                OrderInfos = orderInfoRespList,
+                UserId = user.UserId,
+                UserEmail = user.Email,
+                UserName = user.Username
             };
 
             return Ok(orderRespModel);

@@ -66,6 +66,47 @@ namespace Haikakin.Repository
             return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
         }
 
+        public AuthenticateResponse AuthenticateAdmin(AuthenticationModel model, LoginTypeEnum loginType, string ipAddress)
+        {
+            var encryptPassword = Encrypt.HMACSHA256(model.Password, _appSettings.UserSecret);
+
+            User user = null;
+            if (!string.IsNullOrEmpty(model.Email))
+            {
+                user = _db.Users.SingleOrDefault(x => x.Email == model.Email && x.Password == encryptPassword && x.LoginType == loginType);
+
+            }
+
+            if (!string.IsNullOrEmpty(model.PhoneNumber))
+            {
+                user = _db.Users.SingleOrDefault(x => x.PhoneNumber == model.PhoneNumber && x.Password == encryptPassword && x.LoginType == loginType);
+            }
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            if (user.Role != "Admin")
+            {
+                return null;
+            }
+
+            var jwtToken = generateJwtToken(user);
+            var refreshToken = generateRefreshToken(ipAddress);
+
+            user.RefreshTokens.Add(refreshToken);
+            if (user.RefreshTokens.Count >= 2)
+            {
+                user.RefreshTokens.RemoveRange(0, user.RefreshTokens.Count - 1);
+            }
+            user.LastLoginTime = DateTime.UtcNow;
+            _db.Update(user);
+            _db.SaveChanges();
+
+            return new AuthenticateResponse(user, jwtToken, refreshToken.Token);
+        }
+
         public AuthenticateResponse AuthenticateThird(string userEmail, LoginTypeEnum loginType, string ipAddress)
         {
             var user = _db.Users.SingleOrDefault(x => x.Email == userEmail && x.LoginType == loginType);

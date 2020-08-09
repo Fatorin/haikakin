@@ -8,7 +8,6 @@ namespace Haikakin.Models
         public string Username { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
-        public string Role { get; set; }
         public string JwtToken { get; set; }
         [JsonIgnore] // refresh token is returned in http only cookie
         public string RefreshToken { get; set; }
