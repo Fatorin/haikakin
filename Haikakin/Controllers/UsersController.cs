@@ -114,7 +114,7 @@ namespace Haikakin.Controllers
             }
 
             user.Username = userDto.Username;
-            if (_userRepo.UpdateUser(user))
+            if (!_userRepo.UpdateUser(user))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
             }
