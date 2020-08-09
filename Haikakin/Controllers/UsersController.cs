@@ -160,6 +160,11 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
             }
 
+            if (user.LoginType != LoginTypeEnum.Normal)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "第三方登入不支援改密碼" });
+            }
+
             var oldPasswordConvert = Encrypt.HMACSHA256(userDto.UserOldPassword, _appSettings.UserSecret);
             if (oldPasswordConvert != user.Password)
             {
@@ -228,7 +233,7 @@ namespace Haikakin.Controllers
             user.EmailVerity = false;
             user.Email = userDto.UserEmail;
 
-            if (_userRepo.UpdateUser(user))
+            if (!_userRepo.UpdateUser(user))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
             }
