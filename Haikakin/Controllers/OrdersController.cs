@@ -76,14 +76,14 @@ namespace Haikakin.Controllers
         }
 
         /// <summary>
-        /// 查詢指定訂單，User只可以查自己的，Admin不限制
+        /// 查詢指定訂單，User專用
         /// </summary>
         /// <param name="orderId"> The id of the order</param>
         /// <returns></returns>
         [HttpGet("{orderId:int}", Name = "GetOrder")]
         [ProducesResponseType(200, Type = typeof(OrderResponse))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "User")]
         public IActionResult GetOrder(int orderId)
         {
             var obj = _orderRepo.GetOrder(orderId);
@@ -108,7 +108,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶不存在" });
             }
 
-            if (userId != obj.UserId && user.Role != "Admin")
+            if (userId != obj.UserId)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "非使用者訂單" });
             }
@@ -117,7 +117,7 @@ namespace Haikakin.Controllers
             foreach (var orderInfo in obj.OrderInfos)
             {
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
-                orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count));
+                orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count, null));
             }
 
             var orderRespModel = new OrderResponse()

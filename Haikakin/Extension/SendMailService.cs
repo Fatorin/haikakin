@@ -51,7 +51,7 @@ namespace Haikakin.Extension
         public bool AccountMailBuild(EmailAccount model)
         {
             var title = "Haikakin 會員驗證信";
-            var url = $"http://www.haikakin.com/mailverifcation?uid={model.UserId}&email={model.UserEmail}&emailVerityAction={model.EmailVerityAction}";
+            var url = $"http://www.haikakin.com/mailverifcation?uid={model.UserId}&email={model.UserEmail}&emailVerityAction={model.EmailVerityAction:d}";
             string body = File.ReadAllText(Path.Combine("EmailTemplates/Account.html"));
             body = body.Replace("#username", $"{model.UserName}");
             body = body.Replace("#url", url);

@@ -11,6 +11,13 @@
              <param name="model"></param>
              <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.AdminController.GetOrderByAdmin(System.Int32)">
+            <summary>
+            查詢指定訂單，User只可以查自己的，Admin不限制
+            </summary>
+            <param name="orderId"> The id of the order</param>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrders">
             <summary>
             獲得所有訂單，只有Admin可用
@@ -19,7 +26,7 @@
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrder(System.Int32)">
             <summary>
-            查詢指定訂單，User只可以查自己的，Admin不限制
+            查詢指定訂單，User專用
             </summary>
             <param name="orderId"> The id of the order</param>
             <returns></returns>

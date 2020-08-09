@@ -11,6 +11,8 @@ namespace Haikakin.Repository.IRepository
     {
         ICollection<ProductInfo> GetProductInfos();
 
+        ICollection<ProductInfo> GetProductInfosByOrderInfoId(int orderInfoId);
+
         ProductInfo GetProductInfo(int productInfoId);
 
         bool ProductInfoExists(int id);

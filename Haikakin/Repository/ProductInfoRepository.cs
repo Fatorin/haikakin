@@ -53,6 +53,10 @@ namespace Haikakin.Repository
         {
             return _db.ProductInfos.OrderBy(p => p.ProductInfoId).ToList();
         }
+        public ICollection<ProductInfo> GetProductInfosByOrderInfoId(int orderInfoId)
+        {
+            return _db.ProductInfos.Where(p => p.OrderInfoId == orderInfoId).ToList();
+        }
 
         public bool ProductInfoExists(int id)
         {
