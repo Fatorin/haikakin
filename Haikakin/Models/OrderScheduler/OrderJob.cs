@@ -35,17 +35,17 @@ namespace Haikakin.Models.OrderScheduler
                 _logger.LogInformation($"orderId={orderId}");
                 if (orderObj == null)
                 {
-                    //return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
+                    return Task.CompletedTask;
                 }
 
                 if (orderObj.OrderStatus == OrderStatusType.Over)
                 {
-                    //return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已結束" });
+                    return Task.CompletedTask;
                 }
 
                 if (orderObj.OrderStatus == OrderStatusType.Cancel)
                 {
-                    //return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單已取消" });
+                    return Task.CompletedTask;
                 }
 
                 //更新庫存 解除已使用
@@ -92,10 +92,9 @@ namespace Haikakin.Models.OrderScheduler
             .WithDescription("A order time up")
             .UsingJobData("orderId", orderId)
             .Build();
-            //use TriggerBuilder to create a Trigger
             var trigger = TriggerBuilder
             .Create()
-            .StartAt(DateTimeOffset.Now.AddHours(1))// start a job after 5 seconds
+            .StartAt(DateTimeOffset.Now.AddHours(1))
             .Build();
             //call the scheduler.ScheduleJob
             return scheduler.ScheduleJob(jobDetails, trigger);

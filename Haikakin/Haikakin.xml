@@ -13,7 +13,7 @@
         </member>
         <member name="M:Haikakin.Controllers.AdminController.GetOrderByAdmin(System.Int32)">
             <summary>
-            查詢指定訂單，User只可以查自己的，Admin不限制
+            查詢指定訂單，Admin限定
             </summary>
             <param name="orderId"> The id of the order</param>
             <returns></returns>
@@ -240,7 +240,7 @@
         </member>
         <member name="P:Haikakin.Models.ECPayModel.ECPaymentResponseModel.RtnCode">
             <summary>
-            回 傳 值 時 為1 時，交易狀態為取號成功，其餘為失敗。
+            回傳1時代表付款成功。
             </summary>
         </member>
         <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">

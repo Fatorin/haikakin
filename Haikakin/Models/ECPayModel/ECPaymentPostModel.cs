@@ -16,6 +16,13 @@ namespace Haikakin.Models.ECPayModel
             SetParameter(model);
             PostValue = DictionaryToParamter();
         }
+        public ECPaymentPostModel(ECPaymentResponseModel model)
+        {
+            model.CheckMacValue = null;
+            PostCollection = new SortedDictionary<string, string>();
+            SetParameter(model);
+            PostValue = DictionaryToParamter();
+        }
 
         private string DictionaryToParamter()
         {
