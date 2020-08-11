@@ -16,11 +16,11 @@ namespace Haikakin.Models.ECPayModel
             SetParameter(model);
             PostValue = DictionaryToParamter();
         }
+
         public ECPaymentPostModel(ECPaymentResponseModel model)
         {
-            model.CheckMacValue = null;
             PostCollection = new SortedDictionary<string, string>();
-            SetParameter(model);
+            SetParameterResponse(model);
             PostValue = DictionaryToParamter();
         }
 
@@ -36,6 +36,19 @@ namespace Haikakin.Models.ECPayModel
             {
                 value = prop.GetValue(target, null);
                 if (null != value)
+                {
+                    this.PostCollection[prop.Name] = value.ToString();
+                }
+            }
+        }
+
+        private void SetParameterResponse(object target)
+        {
+            object value;
+            foreach (var prop in target.GetType().GetProperties())
+            {
+                value = prop.GetValue(target, null);
+                if (null != value && prop.Name != "CheckMacValue")
                 {
                     this.PostCollection[prop.Name] = value.ToString();
                 }

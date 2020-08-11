@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Haikakin.Models.ECPayModel
@@ -10,9 +11,6 @@ namespace Haikakin.Models.ECPayModel
     {
         [StringLength(10)]
         public string MerchantID { get; set; }
-
-        [StringLength(10)]
-        public string PlatformID { get; set; }
 
         [StringLength(20)]
         public string MerchantTradeNo { get; set; }
@@ -62,7 +60,7 @@ namespace Haikakin.Models.ECPayModel
 
         public override string ToString()
         {
-            return $"MerchantID={MerchantID}, PlatformID={PlatformID}, MerchantTradeNo={MerchantTradeNo}, StoreID={StoreID}, RtnCode={RtnCode}, RtnMsg={RtnMsg}, TradeNo={TradeNo}, TradeAmt={TradeAmt}, PaymentDate={PaymentDate}, PaymentType={PaymentType}, PaymentTypeChargeFee={PaymentTypeChargeFee}, TradeDate={TradeDate}, SimulatePaid={SimulatePaid}, CustomField1={CustomField1}, CustomField2={CustomField2}, CustomField3={CustomField3}, CustomField3={CustomField3}, CustomField4={CustomField4}, CheckMacValue={CheckMacValue}";
+            return $"MerchantID={MerchantID}, MerchantTradeNo={MerchantTradeNo}, StoreID={StoreID},\n RtnCode={RtnCode}, RtnMsg={RtnMsg}, TradeNo={TradeNo},\n TradeAmt={TradeAmt}, PaymentDate={PaymentDate}, PaymentType={PaymentType},\n PaymentTypeChargeFee={PaymentTypeChargeFee}, TradeDate={TradeDate}, SimulatePaid={SimulatePaid},\n CustomField1={CustomField1}, CustomField2={CustomField2}, CustomField3={CustomField3},\n CustomField3={CustomField3}, CustomField4={CustomField4}, CheckMacValue={CheckMacValue}";
         }
     }
 }
