@@ -308,8 +308,7 @@ namespace Haikakin.Controllers
 
             if (ecPayModel.CheckMacValue != calcCheckMacValue)
             {
-                _logger.LogInformation("0|檢查碼錯誤");
-                _logger.LogInformation(ecPayModel.ToString());
+                _logger.LogInformation($"postModel.PostValue={postModel.PostValue}");
                 return BadRequest("0|檢查碼錯誤");
             }
             //此為模擬付款，會直接跳過 先暫時拿掉用於測試

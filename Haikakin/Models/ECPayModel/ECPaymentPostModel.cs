@@ -48,9 +48,16 @@ namespace Haikakin.Models.ECPayModel
             foreach (var prop in target.GetType().GetProperties())
             {
                 value = prop.GetValue(target, null);
-                if (null != value && prop.Name != "CheckMacValue")
+                if (prop.Name != "CheckMacValue")
                 {
-                    this.PostCollection[prop.Name] = value.ToString();
+                    if (null != value)
+                    {
+                        this.PostCollection[prop.Name] = value.ToString();
+                    }
+                    else
+                    {
+                        this.PostCollection[prop.Name] = "";
+                    }
                 }
             }
         }

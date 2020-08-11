@@ -57,10 +57,5 @@ namespace Haikakin.Models.ECPayModel
         public string CustomField4 { get; set; }
 
         public string CheckMacValue { get; set; }
-
-        public override string ToString()
-        {
-            return $"MerchantID={MerchantID}, MerchantTradeNo={MerchantTradeNo}, StoreID={StoreID},\n RtnCode={RtnCode}, RtnMsg={RtnMsg}, TradeNo={TradeNo},\n TradeAmt={TradeAmt}, PaymentDate={PaymentDate}, PaymentType={PaymentType},\n PaymentTypeChargeFee={PaymentTypeChargeFee}, TradeDate={TradeDate}, SimulatePaid={SimulatePaid},\n CustomField1={CustomField1}, CustomField2={CustomField2}, CustomField3={CustomField3},\n CustomField3={CustomField3}, CustomField4={CustomField4}, CheckMacValue={CheckMacValue}";
-        }
     }
 }
