@@ -20,6 +20,9 @@ namespace Haikakin
         public string ECPayMerchantID { get; set; }
         public string ECPayHashKey { get; set; }
         public string ECPayHashIV { get; set; }
+        public string NewebPayMerchantID { get; set; }
+        public string NewebPayHashKey { get; set; }
+        public string NewebPayHashIV { get; set; }
 
     }
 }
