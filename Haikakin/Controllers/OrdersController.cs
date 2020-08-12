@@ -276,10 +276,10 @@ namespace Haikakin.Controllers
         /// <param name=""></param>
         /// <returns></returns>
         [HttpPost("FinishOrder")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
         [AllowAnonymous]
         public IActionResult FinishOrder([FromForm] NewebPayBaseResp newebPayModel)
         {
@@ -390,7 +390,7 @@ namespace Haikakin.Controllers
             {
                 //$"更新資料錯誤，訂單編號{order.OrderId}"
                 _logger.LogInformation("特店系統異常_Order更新異常");
-                return BadRequest("0|特店系統異常");
+                return BadRequest("特店系統異常");
             }
 
             //沒問題就發送序號
@@ -399,11 +399,11 @@ namespace Haikakin.Controllers
             if (!service.OrderFinishMailBuild(mailModel))
             {
                 //信箱系統掛掉
-                _logger.LogInformation("特店系統異常_信箱");
-                return BadRequest("0|特店系統異常");
+                _logger.LogInformation("序號發送異常");
+                return BadRequest("特店系統異常");
             };
 
-            return Ok("1|OK");
+            return NoContent();
         }
 
         /// <summary>

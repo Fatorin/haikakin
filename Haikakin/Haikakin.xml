@@ -38,7 +38,7 @@
             <param name="orderDtos"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.ECPayModel.ECPaymentResponseModel)">
+        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.NewebPay.NewebPayBaseResp)">
             <summary>
             結束指定訂單，用於第三方的回傳，所以不限定使用者
             </summary>
