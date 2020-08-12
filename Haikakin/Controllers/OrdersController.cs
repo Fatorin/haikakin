@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Policy;
 using System.Text;
+using System.Web;
 using AutoMapper;
 using Haikakin.Extension;
 using Haikakin.Extension.ECPay;
@@ -43,9 +45,9 @@ namespace Haikakin.Controllers
         private AppSettings _appSettings;
         private readonly OrderJob _orderJob;
         private IScheduler _scheduler;
-        private readonly ILogger<ECPaymentResponseModel> _logger;
+        private readonly ILogger<NewebPayBaseResp> _logger;
 
-        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler, ILogger<ECPaymentResponseModel> logger)
+        public OrdersController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IMapper mapper, IOptions<AppSettings> appSettings, OrderJob orderJob, IScheduler scheduler, ILogger<NewebPayBaseResp> logger)
         {
             _userRepo = userRepo;
             _orderRepo = orderRepo;
@@ -279,60 +281,64 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [AllowAnonymous]
-        public IActionResult FinishOrder([FromForm] ECPaymentResponseModel ecPayModel)
+        public IActionResult FinishOrder([FromForm] NewebPayBaseResp newebPayModel)
         {
-            if (ecPayModel == null)
+            if (newebPayModel == null)
             {
-                _logger.LogInformation("0|資料請求異常");
-                return BadRequest("0|資料請求異常");
+                _logger.LogInformation("資料請求異常");
+                return BadRequest("資料請求異常");
             }
+
+            if (newebPayModel.Status != "SUCCESS")
+            {
+                _logger.LogInformation($"交易失敗，錯誤代碼：{newebPayModel.Status}");
+            }
+
+            //檢查資料
+            if (newebPayModel.MerchantID != _appSettings.NewebPayMerchantID)
+            {
+                _logger.LogInformation("非本商店訂單");
+                return BadRequest("非本商店訂單");
+            }
+
+            if (newebPayModel.TradeSha != CryptoUtil.EncryptSHA256($"HashKey={_appSettings.NewebPayHashKey}&{newebPayModel.TradeInfo}&HashIV={_appSettings.NewebPayHashIV}"))
+            {
+                _logger.LogInformation("非本商店訂單");
+                return BadRequest("非本商店訂單");
+            }
+
+            var decryptTradeInfo = CryptoUtil.DecryptAESHex(newebPayModel.TradeInfo, _appSettings.NewebPayHashKey, _appSettings.NewebPayHashIV);
+
+            // 取得回傳參數(ex:key1=value1&key2=value2),儲存為NameValueCollection
+            NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(decryptTradeInfo);
+            NewebPayResponse convertModel = LambdaUtil.DictionaryToObject<NewebPayResponse>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
+
             //依照特店交易編號回傳資料
-            var order = _orderRepo.GetOrdersInPaySerial(ecPayModel.MerchantTradeNo);
+            var order = _orderRepo.GetOrdersInPaySerial(convertModel.MerchantOrderNo);
 
             if (order == null)
             {
-                _logger.LogInformation("0|查無此訂單");
-                return BadRequest("0|查無此訂單");
+                _logger.LogInformation($"查無此訂單:{convertModel.MerchantOrderNo}");
+                return BadRequest("查無此訂單");
             }
 
             if (order.OrderStatus == OrderStatusType.Over)
             {
-                _logger.LogInformation("0|資料請求異常");
-                return BadRequest("0|訂單已結束");
+                _logger.LogInformation("資料請求異常");
+                return BadRequest("訂單已結束");
             }
 
             if (order.OrderStatus == OrderStatusType.Cancel)
             {
-                _logger.LogInformation("0|特店訂單已取消");
-                return BadRequest("0|特店訂單已取消");
+                _logger.LogInformation("特店訂單已取消");
+                return BadRequest("特店訂單已取消");
             }
 
-            //檢查金流資訊
-            var postModel = new ECPaymentPostModel(ecPayModel);
-            var calcCheckMacValue = ECPayCheckValue.BuildCheckMacValue(postModel.PostValue, _appSettings.ECPayHashKey, _appSettings.ECPayHashIV, 1);
-
-            if (ecPayModel.CheckMacValue != calcCheckMacValue)
+            if (convertModel.Amt != order.OrderPrice)
             {
-                _logger.LogInformation($"postModel.PostValue={postModel.PostValue}");
-                return BadRequest("0|檢查碼錯誤");
-            }
-            //此為模擬付款，會直接跳過 先暫時拿掉用於測試
-            /*if (ecPayModel.SimulatePaid == 1)
-            {
-                return Ok("1|此為模擬付款");
-            }*/
-
-            if (ecPayModel.TradeAmt != order.OrderPrice)
-            {
-                _logger.LogInformation("0|金額不相符");
-                _logger.LogInformation($"ecPayModel.TradeAmt={ecPayModel.TradeAmt},order.OrderPrice={order.OrderPrice}");
-                return BadRequest("0|金額不相符");
-            }
-
-            if (ecPayModel.RtnCode != 1)
-            {
-                _logger.LogInformation("0|金額不相符");
-                return BadRequest("0|付款失敗，不進行交易");
+                _logger.LogInformation("金額不相符");
+                _logger.LogInformation($"convertModel.Amt={convertModel.Amt},order.OrderPrice={order.OrderPrice}");
+                return BadRequest("金額不相符");
             }
             //如果金流資訊錯誤則回傳失敗            
 
@@ -365,8 +371,8 @@ namespace Haikakin.Controllers
                     if (!_productInfoRepo.UpdateProductInfo(productInfo))
                     {
                         //系統更新資料異常
-                        _logger.LogInformation("0|特店系統異常_ProductInfo更新異常");
-                        return BadRequest("0|特店系統異常");
+                        _logger.LogInformation("特店系統異常_ProductInfo更新異常");
+                        return BadRequest("特店系統異常");
                     };
 
                     orderContext.Append($"{productInfo.Serial}<br>");
@@ -379,11 +385,11 @@ namespace Haikakin.Controllers
             order.OrderStatus = OrderStatusType.Over;
             order.OrderLastUpdateTime = DateTime.UtcNow;
             //要將綠界編號儲存
-            order.OrderECPaySerial = ecPayModel.TradeNo;
+            order.OrderECPaySerial = convertModel.TradeNo;
             if (!_orderRepo.UpdateOrder(order))
             {
                 //$"更新資料錯誤，訂單編號{order.OrderId}"
-                _logger.LogInformation("0|特店系統異常_Order更新異常");
+                _logger.LogInformation("特店系統異常_Order更新異常");
                 return BadRequest("0|特店系統異常");
             }
 
@@ -393,7 +399,7 @@ namespace Haikakin.Controllers
             if (!service.OrderFinishMailBuild(mailModel))
             {
                 //信箱系統掛掉
-                _logger.LogInformation("0|特店系統異常_信箱");
+                _logger.LogInformation("特店系統異常_信箱");
                 return BadRequest("0|特店系統異常");
             };
 
