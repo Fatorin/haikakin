@@ -206,9 +206,11 @@ namespace Haikakin
         private static bool MyIsOriginAllowed(string origin)
         {
             var allowRange = new List<string>() {
-            "http://www.haikakin.com",
+            "https://www.haikakin.com",
             "http://localhost",
             "https://localhost",
+            "https://ccore.newebpay.com/MPG/mpg_gateway",
+            "https://core.newebpay.com/MPG/mpg_gateway",
             "https://postgate.ecpay.com.tw" };
             return allowRange.Contains(origin);
         }

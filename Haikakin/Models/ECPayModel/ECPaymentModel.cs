@@ -37,8 +37,8 @@ namespace Haikakin.Models.ECPayModel
                 }
             }
             this.ItemName = sb.ToString();
-            this.ReturnURL = $"http://www.haikakin.com/api/v1/Orders/FinishOrder";
-            this.ClientBackURL = $"http://www.haikakin.com/account/order";
+            this.ReturnURL = $"https://www.haikakin.com/api/v1/Orders/FinishOrder";
+            this.ClientBackURL = $"https://www.haikakin.com/account/order";
             this.ChoosePayment = ECPaymentMethod.CVS.ToString("G");
             this.StoreExpireDate = 15;
             this.Desc_1 = description;

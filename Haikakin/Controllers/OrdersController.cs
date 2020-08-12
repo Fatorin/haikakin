@@ -511,8 +511,8 @@ namespace Haikakin.Controllers
             DateTimeOffset taipeiStandardTimeOffset = DateTimeOffset.Now.ToOffset(new TimeSpan(8, 0, 0));
             // 預設參數
             var version = "1.5";
-            var returnURL = "http://www.haikakin.com/account/order";
-            var notifyURL = "http://www.haikakin.com/api/v1/Orders/FinishOrder";
+            var returnURL = "https://www.haikakin.com/account/order";
+            var notifyURL = "https://www.haikakin.com/api/v1/Orders/FinishOrder";
 
             NewebPayRequest newebPayRequest = new NewebPayRequest()
             {
@@ -533,13 +533,13 @@ namespace Haikakin.Controllers
                 // 繳費有效期限(適用於非即時交易)
                 ExpireDate = null,
                 // 支付完成 返回商店網址
-                ReturnURL = returnURL,
+                ReturnURL = null,
                 // 支付通知網址
                 NotifyURL = notifyURL,
                 // 商店取號網址
                 CustomerURL = null,
                 // 支付取消 返回商店網址
-                ClientBackURL = null,
+                ClientBackURL = returnURL,
                 // * 付款人電子信箱
                 Email = userEmail,
                 // 付款人電子信箱 是否開放修改(1=可修改 0=不可修改)
@@ -575,13 +575,13 @@ namespace Haikakin.Controllers
             else if (string.Equals(payType, "CVS"))
             {
                 // 設定繳費截止日期
-                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddMinutes(15).ToString("yyyyMMdd");
+                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddHours(1).ToString("yyyyMMdd");
                 newebPayRequest.CVS = 1;
             }
             else if (string.Equals(payType, "BARCODE"))
             {
                 // 設定繳費截止日期
-                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddMinutes(15).ToString("yyyyMMdd");
+                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddHours(1).ToString("yyyyMMdd");
                 newebPayRequest.BARCODE = 1;
             }
 
