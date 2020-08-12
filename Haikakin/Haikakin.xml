@@ -198,6 +198,77 @@
             雜湊加密演算法物件。
             </summary>
         </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.EncryptAES(System.Byte[],System.String,System.String)">
+            <summary>
+            字串加密AES
+            </summary>
+            <param name="source">加密前字串</param>
+            <param name="cryptoKey">加密金鑰</param>
+            <param name="cryptoIV">cryptoIV</param>
+            <returns>加密後字串</returns>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.DecryptAES(System.Byte[],System.String,System.String)">
+            <summary>
+            字串解密AES
+            </summary>
+            <param name="source">解密前字串</param>
+            <param name="cryptoKey">解密金鑰</param>
+            <param name="cryptoIV">cryptoIV</param>
+            <returns>解密後字串</returns>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.EncryptAESHex(System.String,System.String,System.String)">
+            <summary>
+            加密後再轉 16 進制字串
+            </summary>
+            <param name="source">加密前字串</param>
+            <param name="cryptoKey">加密金鑰</param>
+            <param name="cryptoIV">cryptoIV</param>
+            <returns>加密後的字串</returns>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.DecryptAESHex(System.String,System.String,System.String)">
+            <summary>
+            16 進制字串解密
+            </summary>
+            <param name="source">加密前字串</param>
+            <param name="cryptoKey">加密金鑰</param>
+            <param name="cryptoIV">cryptoIV</param>
+            <returns>解密後的字串</returns>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.EncryptSHA256(System.String)">
+            <summary>
+            字串加密SHA256
+            </summary>
+            <param name="source">加密前字串</param>
+            <returns>加密後字串</returns>
+        </member>
+        <member name="T:Haikakin.Extension.NewebPayUtil.LambdaUtil">
+            <summary>
+            [Lambda]通用函式
+            </summary>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.LambdaUtil.DictionaryToObject``1(System.Collections.Generic.IDictionary{System.String,System.String})">
+            <summary>
+            Dictionary 轉為物件(欄位不分大小寫)
+            </summary>
+            <typeparam name="T">泛型</typeparam>
+            <param name="dict">IDictionary 物件</param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Extension.NewebPayUtil.LambdaUtil.ModelToKeyValuePairList``1(``0)">
+            <summary>
+            將model 轉換為KeyValuePair List, null值不轉
+            </summary>
+            <typeparam name="T">泛型</typeparam>
+            <param name="model">欲轉換之Model</param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Extension.StringExtension.ToByteArray(System.String)">
+            <summary>
+            將16進位字串轉換為byteArray
+            </summary>
+            <param name="source">欲轉換之字串</param>
+            <returns></returns>
+        </member>
         <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.StoreExpireDate">
             <summary>
             超商繳費截止時間
@@ -241,6 +312,524 @@
         <member name="P:Haikakin.Models.ECPayModel.ECPaymentResponseModel.RtnCode">
             <summary>
             回傳1時代表付款成功。
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayBase.MerchantID">
+            <summary>
+            商店代號
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayBase.TradeInfo">
+            <summary>
+            交易資料AES 加密
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayBase.TradeSha">
+            <summary>
+            交易資料SHA256 加密
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayBase.Version">
+            <summary>
+            串接程式版本
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.MerchantID">
+            <summary>
+            * 商店代號
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.RespondType">
+            <summary>
+            * 回傳格式
+            <para>JSON 或是 String</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.TimeStamp">
+            <summary>
+            * TimeStamp
+            <para>自從 Unix 纪元（格林威治時間 1970 年 1 月 1 日 00:00:00）到當前時間的秒數。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.Version">
+            <summary>
+            * 串接程式版本
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.LangType">
+            <summary>
+            語系
+            <para>英文版參數為en、繁體中文版參數為zh-tw</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.MerchantOrderNo">
+            <summary>
+            * 商店訂單編號
+            <para>限英、數字、_ 格式</para>
+            <para>長度限制為20字</para>
+            <para>同一商店中此編號不可重覆。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.Amt">
+            <summary>
+            * 訂單金額
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.ItemDesc">
+            <summary>
+            * 商品資訊
+            <para>1.限制長度為50字。</para>
+            <para>2.編碼為Utf-8格式。</para>
+            <para>3.請勿使用斷行符號、單引號等特殊符號，避免無法顯示完整付款頁面。</para>
+            <para>4.若使用特殊符號，系統將自動過濾。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.TradeLimit">
+            <summary>
+            交易限制秒數
+            <para>1.限制交易的秒數，當秒數倒數至0時，交易當做失敗。</para>
+            <para>2.僅可接受數字格式。</para>
+            <para>3.秒數下限為60秒，當秒數介於1 ~59秒時，會以60秒計算。</para>
+            <para>4.秒數上限為900秒，當超過900秒時，會以900秒計算。</para>
+            <para>5.若未帶此參數，或是為0時，會視作為不啟用交易限制秒數。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.ExpireDate">
+            <summary>
+            繳費有效期限(適用於非即時交易)
+            <para>1.格式為 date('Ymd') ，例：20140620</para>
+            <para>2.此參數若為空值，系統預設為7天。自取號時間起算至第7天23:59:59。 例：2014-06-23 14:35:51完成取號，則繳費有效期限為2014-06-29 23:59:59。</para>
+            <para>3.可接受最大值為180天。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.ReturnURL">
+            <summary>
+            支付完成 返回商店網址
+            <para>1.交易完成後，以 Form Post 方式導回商店頁面。</para>
+            <para>2.若為空值，交易完成後，消費者將停留在智付通付款或取號完成頁面。</para>
+            <para>3.只接受80與443 Port。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.NotifyURL">
+            <summary>
+            支付通知網址
+            <para>1.以幕後方式回傳給商店相關支付結果資料</para>
+            <para>2.只接受80與443 Port。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.CustomerURL">
+            <summary>
+            商店取號網址
+            <para>1.系統取號後以 form post 方式將結果導回商店指定的網址</para>
+            <para>2.此參數若為空值，則會顯示取號結果在智付通頁面。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.ClientBackURL">
+            <summary>
+            支付取消 返回商店網址
+            <para>1.當交易取消時，平台會出現返回鈕，使消費者依以此參數網址返回商店指定的頁面。</para>
+            <para>2.此參數若為空值時，則無返回鈕。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.Email">
+            <summary>
+            * 付款人電子信箱
+            <para>於交易完成或付款完成時，通知付款人使用。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.EmailModify">
+            <summary>
+            付款人電子信箱 是否開放修改
+            <para>1=可修改 0=不可修改</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.LoginType">
+            <summary>
+            * 智付通會員
+            <para>0=不須登入智付通會員</para>
+            <para>1=須要登入智付通會員</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.OrderComment">
+            <summary>
+            商店備註
+            <para>1.限制長度為300字。</para>
+            <para>2.若有提供此參數，將會於MPG頁面呈現商店備註內容。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.CREDIT">
+            <summary>
+            信用卡 一次付清啟用
+            <para>設定是否啟用信用卡一次付清支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0或者未有此參數=不啟用</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.ANDROIDPAY">
+            <summary>
+            Google Pay 啟用
+            <para>設定是否啟用Google Pay支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0或者未有此參數=不啟用</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.SAMSUNGPAY">
+            <summary>
+            Samsung Pay 啟用
+            <para>設定是否啟用Samsung Pay支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0或者未有此參數=不啟用</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.InstFlag">
+            <summary>
+            信用卡 分期付款啟用
+            <para>1. 此欄位值=1 時，即代表開啟所有分期期別，且不可帶入其他期別參數。</para>
+            <para>2. 此欄位值為下列數值時，即代表開啟該分期期別。(3=分 3 期功能、6=分 6 期功能、12=分 12 期功能、18=分 18 期功能、24=分 24 期功能、30=分 30 期功能)</para>
+            <para>同時開啟多期別時，將此參數用"，"(半形)分隔，例如：3,6,12，代表開啟分3、6、12 期的功能。</para>
+            <para>此欄位值=0或無值時，即代表不開啟分期。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.CreditRed">
+            <summary>
+            信用卡 紅利啟用
+            <para>設定是否啟用信用卡紅利支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0或者未有此參數=不啟用</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.UNIONPAY">
+            <summary>
+            信用卡 銀聯卡啟用
+            <para>設定是否啟用銀聯卡支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0或者未有此參數=不啟用</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.WEBATM">
+            <summary>
+            WEBATM啟用
+            <para>設定是否啟用WEBATM支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0 或者未有此參數，即代表不開啟</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.VACC">
+            <summary>
+            ATM 轉帳啟用
+            <para>設定是否啟用ATM 轉帳支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0 或者未有此參數，即代表不開啟</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.CVS">
+            <summary>
+            超商代碼繳費啟用
+            <para>設定是否啟用超商代碼繳費支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0 或者未有此參數，即代表不開啟</para>
+            <para>當該筆訂單金額小於 30 元或超過 2 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.BARCODE">
+            <summary>
+            超商條碼繳費啟用
+            <para>設定是否啟用超商條碼繳費支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0 或者未有此參數，即代表不開啟</para>
+            <para>當該筆訂單金額小於 20 元或超過 4 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayRequest.P2G">
+            <summary>
+            Pay2go 電子錢包啟用
+            <para>設定是否啟用Pay2go 電子錢包支付方式。</para>
+            <para>1 =啟用</para>
+            <para>0 或者未有此參數，即代表不開啟</para>
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "P:Haikakin.Models.NewebPay.NewebPayRequest.CVSCOM" -->
+        <member name="T:Haikakin.Models.NewebPay.NewebPayResponse">
+            <summary>
+            智付通交易支付系統回傳解密後資料
+            <para>1. 即時交易支付方式：信用卡(CREDIT)、WebATM(WEBATM) 、Pay2go 電子錢包(P2G)、Google Pay(ANDROIDPAY)、Samsung Pay(SAMSUNGPAY)。</para>
+            <para>2. 非即時交易支付方式：超商代碼繳費(CVS)、ATM 轉帳(VACC)、超商條碼繳費(BARCODE) 、超商取貨付款(CVSCOM)。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Status">
+            <summary>
+            回傳狀態
+            <para>1.若交易付款成功，則回傳SUCCESS。</para>
+            <para>2.若交易付款失敗，則回傳錯誤代碼。</para>
+            <para>3.若使用新增自訂支付欄位之交易，則回傳CUSTOM。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Message">
+            <summary>
+            回傳訊息(敘述此次交易狀態。)
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.MerchantID">
+            <summary>
+            商店代號(智付通商店代號)
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Amt">
+            <summary>
+            交易金額
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.TradeNo">
+            <summary>
+            智付通交易序號
+            <para>智付通在此筆交易取號成功時所產生的序號。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.MerchantOrderNo">
+            <summary>
+            商店訂單編號
+            <para>商店自訂訂單編號。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PaymentType">
+            <summary>
+            支付方式
+            <para>CREDIT 信用卡         即時交易</para>
+            <para>WEBATM WebATM         即時交易</para>
+            <para>VACC ATM轉帳        非即時交易</para>
+            <para>CVS 超商代碼繳費   非即時交易</para>
+            <para>BARCODE 超商條碼繳費   非即時交易</para>
+            <para>CVSCOM 超商取貨付款   非即時交易</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.RespondType">
+            <summary>
+            回傳格式
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PayTime">
+            <summary>
+            支付完成時間
+            <para>回傳格式為：2014-06-2516:43:49</para>
+            <para>註 : 若為超商取貨付款的訂單成立時，notify Url不回傳此參數。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.IP">
+            <summary>
+            交易 IP
+            <para>付款人取號或交易時的 IP。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.EscrowBank">
+            <summary>
+            款項保管銀行
+            <para>1.該筆交易履約保證銀行。</para>
+            <para>2.如商店是直接與銀行簽約的信用卡特約商店，當使用信用卡支付時，本欄位的值會以空值回傳。</para>
+            <para>3.履保銀行英文代碼與中文名稱對應如下：</para>
+            <para>  ［Esun］：玉山銀行</para>
+            <para>  ［Taishin］：台新銀行</para>
+            <para>  ［HNCB］：華南銀行</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.RespondCode">
+            <summary>
+            金融機構回應碼
+            <para>1.由收單機構所回應的回應碼。</para>
+            <para>2.若交易送至收單機構授權時已是失敗狀態，則本欄位的值會以空值回傳。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Auth">
+            <summary>
+            授權碼
+            <para>1.由收單機構所回應的授權碼。</para>
+            <para>2.若交易送至收單機構授權時已是失敗狀態，則本欄位的值會以空值回傳。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Card6No">
+            <summary>
+            卡號前六碼
+            <para>1.信用卡卡號前六碼。</para>
+            <para>2.若交易送至收單機構授權時已是失敗狀態，則本欄位的值會以空值回傳。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Card4No">
+            <summary>
+            卡號末四碼
+            <para>1.信用卡卡號後四碼。</para>
+            <para>2.若交易送至收單機構授權時已是失敗狀態，則本欄位的值會以空值回傳。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Inst">
+            <summary>
+            分期-期別
+            <para>信用卡分期交易期別。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.InstFirst">
+            <summary>
+            分期-首期金額
+            <para>信用卡分期交易首期金額。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.InstEach">
+            <summary>
+            分期-每期金額
+            <para>信用卡分期交易每期金額。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.ECI">
+            <summary>
+            ECI 值
+            <para>1.3D 回傳值 eci=1,2,5,6，代表為 3D 交易。</para>
+            <para>2.若交易送至收單機構授權時已是失敗狀態，則本欄位的值會以空值回傳。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.TokenUseStatus">
+            <summary>
+            信用卡快速結帳使用狀態
+            <para>0=該筆交易為非使用信用卡快速結帳功能</para>
+            <para>1=該筆交易為首次設定信用卡快速結帳功能</para>
+            <para>2=該筆交易為使用信用卡快速結帳功能</para>
+            <para>9=該筆交易為取消信用卡快速結帳功能功能</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.RedAmt">
+            <summary>
+            紅利折抵後實際金額
+            <para>1.扣除紅利交易折抵後的實際授權金額。</para>
+            <para>  例：1000 元之交易，紅利折抵 60 元，則紅利折抵後實際金額為 940 元。</para>
+            <para>2.若紅利點數不足，會有以下狀況：</para>
+            <para>  2-1 紅利折抵交易失敗，回傳參數數值為 0。</para>
+            <para>  2-2 紅利折抵交易成功，回傳參數數值為訂單金額。</para>
+            <para>  2-3 紅利折抵交易是否成功，視該銀行之設定為準。</para>
+            <para>3.僅有使用紅利折抵交易時才會回傳此參數。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PaymentMethod">
+            <summary>
+            交易類別
+            <para>將依據此筆交易之信用卡類別回傳相對應的參數，對應參數如下：</para>
+            <para>   CREDIT = 台灣發卡機構核發之信用卡</para>
+            <para>   FOREIGN = 國外發卡機構核發之卡</para>
+            <para>   UNIONPAY = 銀聯卡</para>
+            <para>   GOOGLEPAY = GooglePay</para>
+            <para>   SAMSUNGPAY = SamsungPay</para>
+            <para>   DCC = 動態貨幣轉換</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.DCC_Amt">
+            <summary>
+            外幣金額
+            <para>DCC 動態貨幣轉換交易才會回傳的參數</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.DCC_Rate">
+            <summary>
+            匯率
+            <para>DCC 動態貨幣轉換交易才會回傳的參數</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.DCC_Markup">
+            <summary>
+            風險匯率
+            <para>DCC 動態貨幣轉換交易才會回傳的參數</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.DCC_Currency">
+            <summary>
+            幣別
+            <para>DCC 動態貨幣轉換交易才會回傳的參數</para>
+            <para>例如：USD、JPY …</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.DCC_Currency_Code">
+            <summary>
+            幣別代碼
+            <para>DCC 動態貨幣轉換交易才會回傳的參數</para>
+            <para>例如：MOP = 446 ….</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PayBankCode">
+            <summary>
+            付款人金融機構代碼
+            <para>由代收款金融機構所回應的付款人金融機構代碼。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PayerAccount5Code">
+            <summary>
+            付款人金融機構帳號末五碼
+            <para>由代收款金融機構所回應的付款人金融機構帳號末五碼。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.CodeNo">
+            <summary>
+            繳費代碼
+            <para>繳費代碼。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.StoreType">
+            <summary>
+            繳費門市類別
+            <para>1=7-11 統一超商</para>
+            <para>2=全家便利商店</para>
+            <para>3=OK 便利商店</para>
+            <para>4=萊爾富便利商店</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.StoreID">
+            <summary>
+            繳費門市代號
+            <para>繳費門市代號 (全家回傳門市中文名稱)</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Barcode_1">
+            <summary>
+            第一段條碼
+            <para>繳費條碼第一段條碼資料。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Barcode_2">
+            <summary>
+            第二段條碼
+            <para>繳費條碼第二段條碼資料。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.Barcode_3">
+            <summary>
+            第三段條碼
+            <para>繳費條碼第三段條碼資料。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.PayStore">
+            <summary>
+            繳費超商
+            <para>付款人至超商繳費，該收款超商的代碼，</para>
+            <para>  SEVEN：7-11</para>
+            <para>  FAMILY：全家</para>
+            <para>  OK：OK 超商</para>
+            <para>  HILIFE：萊爾富</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.P2GTradeNo">
+            <summary>
+            P2G 交易序號
+            <para>P2G 在筆交易所產生的序號。</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.P2GPaymentType">
+            <summary>
+            P2G 支付方式
+            <para>前面會為 P2G_ 開頭，說明如下：</para>
+            <para>  P2G 信用卡交易 P2GPaymentType = P2G_CREDIT</para>
+            <para>  P2G WEBATM 交易 P2GPaymentType = P2G_WEBATM</para>
+            <para>  P2G ATM 轉帳交易 P2GPaymentType = P2G_VACC</para>
+            <para>  P2G 超商代碼繳費交易 P2GPaymentType = P2G_CVS</para>
+            <para>  P2G 電子帳戶交易 P2GPaymentType = P2GEACC</para>
+            </summary>
+        </member>
+        <member name="P:Haikakin.Models.NewebPay.NewebPayResponse.P2GAmt">
+            <summary>
+            P2G 交易金額
             </summary>
         </member>
         <member name="P:Haikakin.Models.ProductInfo.ProductInfoId">

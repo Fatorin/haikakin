@@ -7,10 +7,12 @@ using System.Text;
 using AutoMapper;
 using Haikakin.Extension;
 using Haikakin.Extension.ECPay;
+using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Models.ECPayModel;
 using Haikakin.Models.MailModel;
+using Haikakin.Models.NewebPay;
 using Haikakin.Models.OrderModel;
 using Haikakin.Models.OrderScheduler;
 using Haikakin.Repository.IRepository;
@@ -22,6 +24,7 @@ using Microsoft.Extensions.Options;
 using Quartz;
 using RestSharp;
 using RestSharp.Authenticators;
+using Twilio.Rest.Api.V2010.Account.Usage.Record;
 using static Haikakin.Models.Order;
 
 namespace Haikakin.Controllers
@@ -146,7 +149,7 @@ namespace Haikakin.Controllers
         /// <param name="orderDtos"></param>
         /// <returns></returns>
         [HttpPost]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ECPaymentModel))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(NewebPayBase))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
@@ -248,14 +251,16 @@ namespace Haikakin.Controllers
                 _orderInfoRepo.CreateOrderInfo(orderInfo);
             }
 
-            //產生綠界訂單
-            var ecPayNo = $"ecPay{orderCreatedObj.OrderId}";
-            ECPaymentModel model = new ECPaymentModel(ecPayNo, decimal.ToInt32(orderCreatedObj.OrderPrice), "數位商品訂單", itemsNameList, "數位商品");
-            var postModel = new ECPaymentPostModel(model);
-            model.CheckMacValue = ECPayCheckValue.BuildCheckMacValue(postModel.PostValue, _appSettings.ECPayHashKey, _appSettings.ECPayHashIV, 1);
+            //產生藍新訂單
+            var newebPayNo = $"N{DateTime.Now.ToString("yyyyMMddHHmm")}{orderCreatedObj.OrderId.ToString().Substring(4)}";
+            var items = new StringBuilder();
+            foreach (var item in itemsNameList)
+            {
+                items.AppendLine(item);
+            }
+            var model = CreateNewbPayData(newebPayNo, items.ToString(), decimal.ToInt32(price), user.Email, "CVS");
             //更新訂單的訂單編號與檢查碼
-            orderCreatedObj.OrderPaySerial = ecPayNo;
-            orderCreatedObj.OrderCheckCode = model.CheckMacValue;
+            orderCreatedObj.OrderPaySerial = newebPayNo;
             _orderRepo.UpdateOrder(orderCreatedObj);
             //定時器開啟，一個小時內沒繳完費自動取消
             _orderJob.StartJob(_scheduler, orderObj.OrderId);
@@ -492,6 +497,104 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
+        }
+
+        private NewebPayBase CreateNewbPayData(string ordernumber, string orderItems, int amount, string userEmail, string payType)
+        {
+            // 目前時間轉換 +08:00, 防止傳入時間或Server時間時區不同造成錯誤
+            DateTimeOffset taipeiStandardTimeOffset = DateTimeOffset.Now.ToOffset(new TimeSpan(8, 0, 0));
+            // 預設參數
+            var version = "1.5";
+            var returnURL = "http://www.haikakin.com/account/order";
+            var notifyURL = "http://www.haikakin.com/api/v1/Orders/FinishOrder";
+
+            NewebPayRequest newebPayRequest = new NewebPayRequest()
+            {
+                // * 商店代號
+                MerchantID = _appSettings.NewebPayMerchantID,
+                // * 回傳格式
+                RespondType = "String",
+                // * TimeStamp
+                TimeStamp = taipeiStandardTimeOffset.ToUnixTimeSeconds().ToString(),
+                // * 串接程式版本
+                Version = version,
+                // * 商店訂單編號
+                MerchantOrderNo = ordernumber,
+                // * 訂單金額
+                Amt = amount,
+                // * 商品資訊
+                ItemDesc = orderItems,
+                // 繳費有效期限(適用於非即時交易)
+                ExpireDate = null,
+                // 支付完成 返回商店網址
+                ReturnURL = returnURL,
+                // 支付通知網址
+                NotifyURL = notifyURL,
+                // 商店取號網址
+                CustomerURL = null,
+                // 支付取消 返回商店網址
+                ClientBackURL = null,
+                // * 付款人電子信箱
+                Email = userEmail,
+                // 付款人電子信箱 是否開放修改(1=可修改 0=不可修改)
+                EmailModify = 0,
+                // 商店備註
+                OrderComment = null,
+                // 信用卡 一次付清啟用(1=啟用、0或者未有此參數=不啟用)
+                CREDIT = null,
+                // WEBATM啟用(1=啟用、0或者未有此參數，即代表不開啟)
+                WEBATM = null,
+                // ATM 轉帳啟用(1=啟用、0或者未有此參數，即代表不開啟)
+                VACC = null,
+                // 超商代碼繳費啟用(1=啟用、0或者未有此參數，即代表不開啟)(當該筆訂單金額小於 30 元或超過 2 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。)
+                CVS = null,
+                // 超商條碼繳費啟用(1=啟用、0或者未有此參數，即代表不開啟)(當該筆訂單金額小於 20 元或超過 4 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。)
+                BARCODE = null
+            };
+
+            if (string.Equals(payType, "CREDIT"))
+            {
+                newebPayRequest.CREDIT = 1;
+            }
+            else if (string.Equals(payType, "WEBATM"))
+            {
+                newebPayRequest.WEBATM = 1;
+            }
+            else if (string.Equals(payType, "VACC"))
+            {
+                // 設定繳費截止日期
+                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddDays(1).ToString("yyyyMMdd");
+                newebPayRequest.VACC = 1;
+            }
+            else if (string.Equals(payType, "CVS"))
+            {
+                // 設定繳費截止日期
+                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddMinutes(15).ToString("yyyyMMdd");
+                newebPayRequest.CVS = 1;
+            }
+            else if (string.Equals(payType, "BARCODE"))
+            {
+                // 設定繳費截止日期
+                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddMinutes(15).ToString("yyyyMMdd");
+                newebPayRequest.BARCODE = 1;
+            }
+
+            var inputModel = new NewebPayBase
+            {
+                MerchantID = _appSettings.NewebPayMerchantID,
+                Version = version
+            };
+
+            // 將model 轉換為List<KeyValuePair<string, string>>, null值不轉
+            List<KeyValuePair<string, string>> tradeData = LambdaUtil.ModelToKeyValuePairList<NewebPayRequest>(newebPayRequest);
+            // 將List<KeyValuePair<string, string>> 轉換為 key1=Value1&key2=Value2&key3=Value3...
+            var tradeQueryPara = string.Join("&", tradeData.Select(x => $"{x.Key}={x.Value}"));
+            // AES 加密
+            inputModel.TradeInfo = CryptoUtil.EncryptAESHex(tradeQueryPara, _appSettings.NewebPayHashKey, _appSettings.NewebPayHashIV);
+            // SHA256 加密
+            inputModel.TradeSha = CryptoUtil.EncryptSHA256($"HashKey={_appSettings.NewebPayHashKey}&{inputModel.TradeInfo}&HashIV={_appSettings.NewebPayHashIV}");
+
+            return inputModel;
         }
     }
 }
