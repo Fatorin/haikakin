@@ -2,11 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Haikakin.Controllers
 {
@@ -17,11 +20,13 @@ namespace Haikakin.Controllers
     {
         private IProductInfoRepository _productInfoRepo;
         private IProductRepository _productRepo;
+        private readonly AppSettings _appSettings;
 
-        public ProductsInfoController(IProductInfoRepository productInfoRepo, IProductRepository productRepo)
+        public ProductsInfoController(IProductInfoRepository productInfoRepo, IProductRepository productRepo, IOptions<AppSettings> appSettings)
         {
             _productInfoRepo = productInfoRepo;
             _productRepo = productRepo;
+            _appSettings = appSettings.Value;
         }
 
         /// <summary>
@@ -49,6 +54,12 @@ namespace Haikakin.Controllers
         public IActionResult GetProductInfo(int productInfoId)
         {
             var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+            var key = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+            var sb = new StringBuilder(key);
+            sb.Remove(4, 8);
+            sb.Insert(4, "*", 8);
+            key = sb.ToString();
+            productInfo.Serial = key;
 
             if (productInfo == null)
             {
@@ -80,7 +91,7 @@ namespace Haikakin.Controllers
             }
 
             var count = 0;
-            var duplicate = 0;
+            var failTimes = 0;
             foreach (var file in productInfoFile.FormFiles)
             {
                 if (file.Length > 0)
@@ -89,17 +100,23 @@ namespace Haikakin.Controllers
                     while (reader.Peek() >= 0)
                     {
                         var serial = reader.ReadLine();
+                        if(serial==null || serial.Trim().Length < 8)
+                        {
+                            continue;
+                        }
+                        var encryptSerial = CryptoUtil.EncryptAESHex(serial.Trim(), _appSettings.SerialHashKey, _appSettings.SerialHashIV);
                         var productInfo = new ProductInfo()
                         {
-                            Serial = serial,
+                            Serial = encryptSerial,
                             LastUpdateTime = DateTime.UtcNow,
                             ProductStatus = ProductInfo.ProductStatusEnum.NotUse,
-                            ProductId = productInfoFile.ProductId
+                            ProductId = productInfoFile.ProductId,
+                            PrimeCost = productInfoFile.PrimeCost
                         };
                         //有重複序號會自己跳過
                         if (_productInfoRepo.ProductInfoSerialExists(serial))
                         {
-                            duplicate++;
+                            failTimes++;
                             continue;
                         }
                         //沒有就會新增
@@ -111,7 +128,7 @@ namespace Haikakin.Controllers
                 }
             }
 
-            return Ok(new ErrorPack { ErrorCode = 1000, ErrorMessage = $"新增個數:{count}, 重複個數:{duplicate}" });
+            return Ok(new ErrorPack { ErrorCode = 1000, ErrorMessage = $"新增個數:{count}, 失敗個數:{failTimes}" });
         }
 
         /// <summary>
@@ -133,8 +150,8 @@ namespace Haikakin.Controllers
             {
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的項目" });
             }
-
-            productInfo.Serial = serial;
+            var encryptSerial = CryptoUtil.EncryptAESHex(serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+            productInfo.Serial = encryptSerial;
 
             if (!_productInfoRepo.UpdateProductInfo(productInfo))
             {

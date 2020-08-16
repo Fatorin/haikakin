@@ -1,4 +1,5 @@
 ﻿using Haikakin.Models;
+using Haikakin.Models.AnnouncementModel;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,7 @@ namespace Haikakin.Data
         const int InitSmsSql = 40001000;
         const int InitOrderInfoSql = 50001000;
         const int InitProductInfoSql = 60001000;
+        const int InitAnnouncementSql = 70001000;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -35,6 +37,8 @@ namespace Haikakin.Data
             modelBuilder.Entity<OrderInfo>().Property(u => u.OrderInfoId).HasIdentityOptions(startValue: InitOrderInfoSql).ValueGeneratedOnAdd();
             //設定ProductInfo
             modelBuilder.Entity<ProductInfo>().Property(u => u.ProductInfoId).HasIdentityOptions(startValue: InitProductInfoSql).ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<Announcement>().Property(u => u.AnnouncementId).HasIdentityOptions(startValue: InitAnnouncementSql).ValueGeneratedOnAdd();
         }
 
         public DbSet<User> Users { get; set; }
@@ -43,5 +47,6 @@ namespace Haikakin.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<SmsModel> SmsModels { get; set; }
         public DbSet<ProductInfo> ProductInfos { get; set; }
+        public DbSet<Announcement> Announcements { get; set; }
     }
 }

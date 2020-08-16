@@ -23,6 +23,7 @@ namespace Haikakin
         public string NewebPayMerchantID { get; set; }
         public string NewebPayHashKey { get; set; }
         public string NewebPayHashIV { get; set; }
-
+        public string SerialHashKey { get; set; }
+        public string SerialHashIV { get; set; }
     }
 }

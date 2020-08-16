@@ -53,7 +53,7 @@ namespace Haikakin.Repository
 
             var jwtToken = generateJwtToken(user);
             var refreshToken = generateRefreshToken(ipAddress);
-
+            user.IPAddress = ipAddress;
             user.RefreshTokens.Add(refreshToken);
             if (user.RefreshTokens.Count >= 2)
             {
@@ -91,7 +91,7 @@ namespace Haikakin.Repository
             {
                 return null;
             }
-
+            user.IPAddress = ipAddress;
             var jwtToken = generateJwtToken(user);
             var refreshToken = generateRefreshToken(ipAddress);
 
@@ -115,13 +115,13 @@ namespace Haikakin.Repository
             {
                 return null;
             }
-
+            user.IPAddress = ipAddress;
             var jwtToken = generateJwtToken(user);
             var refreshToken = generateRefreshToken(ipAddress);
 
             user.RefreshTokens.Add(refreshToken);
             if (user.RefreshTokens.Count >= 2)
-            { 
+            {
                 user.RefreshTokens.RemoveRange(0, user.RefreshTokens.Count - 1);
             }
             user.LastLoginTime = DateTime.UtcNow;
@@ -235,6 +235,16 @@ namespace Haikakin.Repository
         public User GetUser(int id)
         {
             return _db.Users.SingleOrDefault(x => x.UserId == id);
+        }
+
+        public ICollection<User> GetUsers()
+        {
+            var list = _db.Users.OrderBy(u => u.UserId).ToList();
+            foreach (var user in list)
+            {
+                user.Password = "";
+            }
+            return list;
         }
 
         public bool UpdateUser(User user)

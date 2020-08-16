@@ -12,12 +12,13 @@ namespace Haikakin.Models.OrderModel
         public DateTime OrderCreateTime { get; set; }
         public DateTime OrderLastUpdateTime { get; set; }
         public OrderStatusType OrderStatus { get; set; }
-        public int OrderPrice { get; set; }
+        public int OrderAmount { get; set; }
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
         public List<OrderInfoResponse> OrderInfos { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
+        public string UserIPAddress { get; set; }
         public string UserEmail { get; set; }
     }
 }

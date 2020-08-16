@@ -9,6 +9,7 @@ namespace Haikakin.Models
     public class ProductInfoFile
     {
         public int ProductId { get; set; }
+        public decimal PrimeCost { get; set; }
         public List<IFormFile> FormFiles { get; set; }
     }
 }

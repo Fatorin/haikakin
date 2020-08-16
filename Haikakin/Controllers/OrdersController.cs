@@ -3,16 +3,13 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Claims;
-using System.Security.Policy;
 using System.Text;
 using System.Web;
 using AutoMapper;
 using Haikakin.Extension;
-using Haikakin.Extension.ECPay;
 using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
-using Haikakin.Models.ECPayModel;
 using Haikakin.Models.MailModel;
 using Haikakin.Models.NewebPay;
 using Haikakin.Models.OrderModel;
@@ -24,9 +21,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
-using RestSharp;
-using RestSharp.Authenticators;
-using Twilio.Rest.Api.V2010.Account.Usage.Record;
 using static Haikakin.Models.Order;
 
 namespace Haikakin.Controllers
@@ -135,7 +129,7 @@ namespace Haikakin.Controllers
                 OrderStatus = obj.OrderStatus,
                 OrderPayWay = obj.OrderPayWay,
                 OrderPaySerial = obj.OrderPaySerial,
-                OrderPrice = decimal.ToInt32(obj.OrderPrice),
+                OrderAmount = decimal.ToInt32(obj.OrderAmount),
                 OrderInfos = orderInfoRespList,
                 UserId = user.UserId,
                 UserEmail = user.Email,
@@ -211,7 +205,7 @@ namespace Haikakin.Controllers
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "超過最大購買限制" });
                 }
                 //商品數量錯誤
-                if (dto.OrderCount == 0)
+                if (dto.OrderCount <= 0)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "購買數量異常" });
                 }
@@ -230,11 +224,10 @@ namespace Haikakin.Controllers
             var orderObj = new Order()
             {
                 OrderCreateTime = DateTime.UtcNow,
-                OrderPrice = price,
-                OrderPayWay = OrderPayWayEnum.None,
+                OrderAmount = price,
+                OrderPayWay = OrderPayWayEnum.CVSBarCode,
                 OrderStatus = OrderStatusType.NonPayment,
                 OrderLastUpdateTime = DateTime.UtcNow,
-                OrderECPayLimitTime = DateTime.UtcNow.AddMinutes(15),
                 Exchange = exchange,
                 UserId = userId,
             };
@@ -261,7 +254,7 @@ namespace Haikakin.Controllers
                 items.AppendLine(item);
             }
             var model = CreateNewbPayData(newebPayNo, items.ToString(), decimal.ToInt32(price), user.Email, "CVS");
-            //更新訂單的訂單編號與檢查碼
+            //更新訂單的訂單編號
             orderCreatedObj.OrderPaySerial = newebPayNo;
             _orderRepo.UpdateOrder(orderCreatedObj);
             //定時器開啟，一個小時內沒繳完費自動取消
@@ -334,13 +327,12 @@ namespace Haikakin.Controllers
                 return BadRequest("特店訂單已取消");
             }
 
-            if (convertModel.Amt != order.OrderPrice)
+            if (convertModel.Amt != order.OrderAmount)
             {
                 _logger.LogInformation("金額不相符");
-                _logger.LogInformation($"convertModel.Amt={convertModel.Amt},order.OrderPrice={order.OrderPrice}");
+                _logger.LogInformation($"convertModel.Amt={convertModel.Amt},order.OrderPrice={order.OrderAmount}");
                 return BadRequest("金額不相符");
             }
-            //如果金流資訊錯誤則回傳失敗            
 
             //獲得對應訂單並修改
             var user = _userRepo.GetUser(order.UserId);
@@ -374,7 +366,7 @@ namespace Haikakin.Controllers
                         _logger.LogInformation("特店系統異常_ProductInfo更新異常");
                         return BadRequest("特店系統異常");
                     };
-
+                    productInfo.Serial = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
                     orderContext.Append($"{productInfo.Serial}<br>");
                 }
 
@@ -385,7 +377,7 @@ namespace Haikakin.Controllers
             order.OrderStatus = OrderStatusType.Over;
             order.OrderLastUpdateTime = DateTime.UtcNow;
             //要將綠界編號儲存
-            order.OrderECPaySerial = convertModel.TradeNo;
+            order.OrderThirdPaySerial = convertModel.TradeNo;
             if (!_orderRepo.UpdateOrder(order))
             {
                 //$"更新資料錯誤，訂單編號{order.OrderId}"

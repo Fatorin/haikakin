@@ -19,6 +19,7 @@ namespace Haikakin.Repository.IRepository
         User Register(RegisterModel model);
         User RegisterThird(string username, string email, LoginTypeEnum loginType);
         User GetUser(int id);
+        ICollection<User> GetUsers();
         bool UpdateUser(User user);
         bool Save();
     }

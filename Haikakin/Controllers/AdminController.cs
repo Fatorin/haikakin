@@ -1,25 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using AutoMapper;
-using Google.Apis.Auth;
-using Haikakin.Extension;
+using ClosedXML.Excel;
 using Haikakin.Models;
-using Haikakin.Models.Dtos;
-using Haikakin.Models.MailModel;
 using Haikakin.Models.OrderModel;
-using Haikakin.Models.UserModel;
+using Haikakin.Models.UploadValidation;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
-using RestSharp;
-using RestSharp.Authenticators;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -73,6 +65,17 @@ namespace Haikakin.Controllers
             return Ok(response);
         }
 
+        [HttpGet("GetUsersByAdmin")]
+        [ProducesResponseType(200, Type = typeof(User))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetUsersByAdmin()
+        {
+            var list = _userRepo.GetUsers();
+
+            return Ok(list);
+        }
+
         /// <summary>
         /// 查詢指定訂單，Admin限定
         /// </summary>
@@ -81,6 +84,7 @@ namespace Haikakin.Controllers
         [HttpGet("{orderId:int}", Name = "GetOrderByAdmin")]
         [ProducesResponseType(200, Type = typeof(OrderResponse))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [Authorize(Roles = "Admin")]
         public IActionResult GetOrderByAdmin(int orderId)
         {
@@ -104,7 +108,7 @@ namespace Haikakin.Controllers
             {
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
                 var productInfos = new List<string>();
-                var serialList = _productInfoRepo.GetProductInfosByOrderInfoId(orderInfo.OrderInfoId).Select(x=>x.Serial).ToList();
+                var serialList = _productInfoRepo.GetProductInfosByOrderInfoId(orderInfo.OrderInfoId).Select(x => x.Serial).ToList();
                 productInfos.AddRange(serialList);
                 orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count, serialList));
             }
@@ -117,14 +121,86 @@ namespace Haikakin.Controllers
                 OrderStatus = obj.OrderStatus,
                 OrderPayWay = obj.OrderPayWay,
                 OrderPaySerial = obj.OrderPaySerial,
-                OrderPrice = decimal.ToInt32(obj.OrderPrice),
+                OrderAmount = decimal.ToInt32(obj.OrderAmount),
                 OrderInfos = orderInfoRespList,
                 UserId = user.UserId,
+                UserIPAddress = user.IPAddress,
                 UserEmail = user.Email,
                 UserName = user.Username
             };
 
             return Ok(orderRespModel);
+        }
+
+        [HttpGet("GetReport")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        public async Task<IActionResult> GetReport()
+        {
+            var workbook = await GenerateReport();
+
+            if (workbook == null)
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "無法產生報表" });
+
+            var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Close();
+            return new FileContentResult(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        }
+
+        [HttpGet("GetImages")]
+        [Authorize(Roles = "Admin")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        public async Task<IActionResult> GetImages()
+        {
+            var folderPath = $"/var/www/UploadImages/";
+            if (!Directory.Exists(folderPath))
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的資料夾" });
+
+            return Ok(Directory.GetFiles(folderPath));
+        }
+
+        [HttpPost("UploadImage")]
+        [Authorize(Roles = "Admin")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        public async Task<IActionResult> UploadImage([FromForm] UploadModel fileObj)
+        {
+            if (fileObj == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "無法接收檔案" });
+            }
+
+            var file = fileObj.Photo;
+            long size = file.Length;
+            var folderPath = $"/var/www/UploadImages/";
+            var filePath = Path.GetRandomFileName().Replace(".", "");
+            var fileExt = Path.GetExtension(file.FileName);
+            var fileFullPath = $"{filePath}{fileExt}";
+            //沒資料夾就不產生
+            if (!Directory.Exists(folderPath))
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的資料夾" });
+            //檔名重複才增加
+            var x = 1;
+            while (System.IO.File.Exists(fileFullPath))
+            {
+                fileFullPath = $"{filePath}{x}{fileExt}";
+                x += 1;
+            }
+
+            using (var stream = System.IO.File.Create($"{folderPath}{fileFullPath}"))
+            {
+                await file.CopyToAsync(stream);
+            }
+            // Process uploaded files
+            // Don't rely on or trust the FileName property without validation.
+
+            return Ok();
         }
 
         //Token新機制
@@ -144,6 +220,81 @@ namespace Haikakin.Controllers
                 return Request.Headers["X-Forwarded-For"];
             else
                 return HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+        }
+
+        private async Task<XLWorkbook> GenerateReport(ICollection<Order> orders)
+        {
+            var t = Task.Run(() =>
+            {
+                var voteResult = new List<ReportModel>();
+                foreach (var order in orders)
+                {
+                    var user = _userRepo.GetUser(order.UserId);
+                    var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(order.OrderId);
+                    bool flag = false;
+                    foreach (var info in orderInfos)
+                    {
+                        //如果是第一個就建立全部，不是就建立分支
+                        var tempProduct = _productRepo.GetProduct(info.ProductId);
+                        if (!flag)
+                        {
+                            flag = true;
+                            var firstModel = new ReportModel
+                            {
+                                OrderId = order.OrderId,
+                                //商品第一項名稱
+                                OrderItems = $"{tempProduct.ProductName}x{info.Count}",
+                                OrderCounts = $"{info.Count}",
+                                OrderAmounts = $"{Convert.ToDecimal(info.Count) * tempProduct.Price}",
+                                UserEmail = user.Email,
+                                UserName = user.Username,
+                                OrderStatus = order.OrderStatus.ToString(),
+                                BuyDate = order.OrderCreateTime.ToString("yyyy/MM/dd HH:mm:ss"),
+                                PayDate = order.OrderLastUpdateTime.ToString("yyyy/MM/dd HH:mm:ss"),
+                                OrderAllAmount = order.OrderAmount,
+                                Exchange = order.Exchange,
+                                PayWay = order.OrderPayWay.ToString(),
+                                PayAmount = order.OrderAmount + decimal.Parse(order.OrderFee),
+                                PayFee = decimal.Parse(order.OrderFee)
+                            };
+                            voteResult.Add(firstModel);
+                        }
+                        else
+                        {
+                            var otherModel = new ReportModel
+                            {
+                                OrderItems = $"{tempProduct.ProductName}x{info.Count}",
+                                OrderCounts = $"{info.Count}",
+                                OrderAmounts = $"{Convert.ToDecimal(info.Count) * tempProduct.Price}",
+                                Exchange = order.Exchange,
+                            };
+                            voteResult.Add(otherModel);
+                        }
+                    }
+                }
+
+                var workbook = new XLWorkbook();
+                var ws = workbook.Worksheets.Add("月報");
+                ws.Cell(1, 1).Value = "訂單編號";
+                ws.Cell(1, 2).Value = "品項";
+                ws.Cell(1, 3).Value = "數量";
+                ws.Cell(1, 4).Value = "進貨價格";
+                ws.Cell(1, 5).Value = "電子郵件";
+                ws.Cell(1, 6).Value = "付款人";
+                ws.Cell(1, 7).Value = "購買日期";
+                ws.Cell(1, 8).Value = "付款日期";
+                ws.Cell(1, 9).Value = "商品總和";
+                ws.Cell(1, 10).Value = "當日匯率";
+                ws.Cell(1, 11).Value = "付款方式";
+                ws.Cell(1, 12).Value = "交易金額";
+                ws.Cell(1, 13).Value = "交易手續費";
+                ws.Cell(2, 1).Value = voteResult;
+                ws.Columns().AdjustToContents();
+
+                return workbook;
+            });
+
+            return await t;
         }
 
     }

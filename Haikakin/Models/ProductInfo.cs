@@ -16,6 +16,8 @@ namespace Haikakin.Models
         public string Serial { get; set; }
         /**流水號*/
         public DateTime LastUpdateTime { get; set; }
+        /**進貨價*/
+        public decimal PrimeCost { get; set; }
         /**已使用、已鎖定、已使用*/
         public enum ProductStatusEnum { NotUse, Lock, Used }
         public ProductStatusEnum ProductStatus { get; set; }

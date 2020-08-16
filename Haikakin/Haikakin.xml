@@ -841,6 +841,9 @@
         <member name="P:Haikakin.Models.ProductInfo.LastUpdateTime">
             流水號
         </member>
+        <member name="P:Haikakin.Models.ProductInfo.PrimeCost">
+            進貨價
+        </member>
         <member name="T:Haikakin.Models.ProductInfo.ProductStatusEnum">
             已使用、已鎖定、已使用
         </member>
