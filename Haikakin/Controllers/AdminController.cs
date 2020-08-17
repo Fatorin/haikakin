@@ -157,27 +157,29 @@ namespace Haikakin.Controllers
         }
 
         [HttpGet("GetImages")]
-        [Authorize(Roles = "Admin")]
-        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetImages()
         {
             var folderPath = $"/var/www/UploadImages/";
             if (!Directory.Exists(folderPath))
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的資料夾" });
-
-            return Ok(Directory.GetFiles(folderPath));
+            var filePaths = Directory.GetFiles(folderPath);
+            for (int i = 0; i < filePaths.Length; i++)
+            {
+                filePaths[i] = filePaths[i].Replace("/var/www", "");
+            }
+            return Ok(filePaths);
         }
 
         [HttpPost("UploadImage")]
-        [Authorize(Roles = "Admin")]
-        [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        public async Task<IActionResult> UploadImage([FromForm] UploadModel fileObj)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UploadImage([FromForm] UploadImageModel fileObj)
         {
             if (fileObj == null)
             {
@@ -185,7 +187,6 @@ namespace Haikakin.Controllers
             }
 
             var file = fileObj.Photo;
-            long size = file.Length;
             var folderPath = $"/var/www/UploadImages/";
             var filePath = Path.GetRandomFileName().Replace(".", "");
             var fileExt = Path.GetExtension(file.FileName);

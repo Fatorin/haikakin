@@ -98,7 +98,7 @@
             <param name="productInfoId"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.ProductsInfoController.CreateProductInfo(Haikakin.Models.ProductInfoFile)">
+        <member name="M:Haikakin.Controllers.ProductsInfoController.CreateProductInfo(Haikakin.Models.UploadValidation.UploadProductInfoModel)">
             <summary>
             上傳產品序號用表單上傳，Admin限定
             </summary>

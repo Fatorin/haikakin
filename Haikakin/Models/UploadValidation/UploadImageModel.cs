@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace Haikakin.Models.UploadValidation
 {
-    public class UploadModel
+    public class UploadImageModel
     {
-        [Required(ErrorMessage = "Please select a file.")]
+        [Required(ErrorMessage = "Error format or size too big.")]
         [DataType(DataType.Upload)]
         [MaxFileSize(5 * 1024 * 1024)]
         [AllowedExtensions(new string[] { ".jpg", ".png" })]

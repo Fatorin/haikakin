@@ -29,13 +29,17 @@ namespace Haikakin.Repository
 
         public ICollection<Announcement> GetAnnouncements(QueryMode queryMode)
         {
-            if (queryMode == QueryMode.Admin)
+            if (queryMode == QueryMode.User)
             {
-                return _db.Announcements.Where(u => u.IsActive == true).Reverse().ToList();
+                var datas = _db.Announcements.Where(u => u.IsActive == true).ToList();
+                datas.Reverse();
+                return datas;
             }
             else
             {
-                return _db.Announcements.OrderBy(u=>u.AnnouncementId).Reverse().ToList();
+                var datas = _db.Announcements.OrderBy(u => u.AnnouncementId).ToList();
+                datas.Reverse();
+                return datas;
             }
         }
 

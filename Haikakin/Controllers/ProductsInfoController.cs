@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
+using Haikakin.Models.UploadValidation;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -78,9 +79,9 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Roles = "Admin")]
-        public IActionResult CreateProductInfo([FromForm] ProductInfoFile productInfoFile)
+        public IActionResult CreateProductInfo([FromForm] UploadProductInfoModel productInfoFile)
         {
-            if (productInfoFile == null || productInfoFile.FormFiles == null)
+            if (productInfoFile == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請確認是否有上傳檔案" });
             }
@@ -92,40 +93,39 @@ namespace Haikakin.Controllers
 
             var count = 0;
             var failTimes = 0;
-            foreach (var file in productInfoFile.FormFiles)
+            var file = productInfoFile.SerialFile;
+            if (file.Length > 0)
             {
-                if (file.Length > 0)
+                StreamReader reader = new StreamReader(file.OpenReadStream());
+                while (reader.Peek() >= 0)
                 {
-                    StreamReader reader = new StreamReader(file.OpenReadStream());
-                    while (reader.Peek() >= 0)
+                    var serial = reader.ReadLine();
+                    if (serial == null || serial.Trim().Length < 8)
                     {
-                        var serial = reader.ReadLine();
-                        if(serial==null || serial.Trim().Length < 8)
-                        {
-                            continue;
-                        }
-                        var encryptSerial = CryptoUtil.EncryptAESHex(serial.Trim(), _appSettings.SerialHashKey, _appSettings.SerialHashIV);
-                        var productInfo = new ProductInfo()
-                        {
-                            Serial = encryptSerial,
-                            LastUpdateTime = DateTime.UtcNow,
-                            ProductStatus = ProductInfo.ProductStatusEnum.NotUse,
-                            ProductId = productInfoFile.ProductId,
-                            PrimeCost = productInfoFile.PrimeCost
-                        };
-                        //有重複序號會自己跳過
-                        if (_productInfoRepo.ProductInfoSerialExists(serial))
-                        {
-                            failTimes++;
-                            continue;
-                        }
-                        //沒有就會新增
-                        _productInfoRepo.CreateProductInfo(productInfo);
-                        count++;
+                        failTimes++;
+                        continue;
                     }
-                    reader.Close();
-                    reader.Dispose();
+                    var encryptSerial = CryptoUtil.EncryptAESHex(serial.Trim(), _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+                    var productInfo = new ProductInfo()
+                    {
+                        Serial = encryptSerial,
+                        LastUpdateTime = DateTime.UtcNow,
+                        ProductStatus = ProductInfo.ProductStatusEnum.NotUse,
+                        ProductId = productInfoFile.ProductId,
+                        PrimeCost = productInfoFile.PrimeCost
+                    };
+                    //有重複序號會自己跳過
+                    if (_productInfoRepo.ProductInfoSerialExists(serial))
+                    {
+                        failTimes++;
+                        continue;
+                    }
+                    //沒有就會新增
+                    _productInfoRepo.CreateProductInfo(productInfo);
+                    count++;
                 }
+                reader.Close();
+                reader.Dispose();
             }
 
             return Ok(new ErrorPack { ErrorCode = 1000, ErrorMessage = $"新增個數:{count}, 失敗個數:{failTimes}" });
