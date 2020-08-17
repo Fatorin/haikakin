@@ -135,9 +135,17 @@ namespace Haikakin.Controllers
         [HttpGet("GetReport")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
-        public async Task<IActionResult> GetReport()
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        public async Task<IActionResult> GetReport([FromBody] DateTime queryStartTime, DateTime queryLastTime)
         {
-            var workbook = await GenerateReport();
+            if (queryStartTime == null || queryLastTime == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "日期時間錯誤" });
+            }
+
+            var objList = _orderRepo.GetOrdersWithTimeRange(queryStartTime, queryLastTime);
+
+            var workbook = await GenerateReport(objList);
 
             if (workbook == null)
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "無法產生報表" });

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Haikakin.Models;
+using Haikakin.Models.AnnouncementModel;
 using Haikakin.Models.Dtos;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace Haikakin.HaikakinMapper
             CreateMap<Order, OrderCreateDto>().ReverseMap();
             CreateMap<Product, ProductDto>().ReverseMap();
             CreateMap<Product, ProductUpsertDto>().ReverseMap();
+            CreateMap<Announcement, AnnouncementCreateDto>().ReverseMap();
         }
     }
 }

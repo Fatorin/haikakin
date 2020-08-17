@@ -13,6 +13,8 @@ namespace Haikakin.Repository.IRepository
 
         ICollection<Order> GetOrdersInUser(int userId);
 
+        ICollection<Order> GetOrdersWithTimeRange(DateTime startTime,DateTime endTime);
+
         Order GetOrder(int orderId);
 
         Order GetOrdersInPaySerial(string paySerial);

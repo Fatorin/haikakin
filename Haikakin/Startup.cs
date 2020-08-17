@@ -86,6 +86,7 @@ namespace Haikakin
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IProductInfoRepository, ProductInfoRepository>();
             services.AddScoped<ISmsRepository, SmsRepository>();
+            services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 
             // 設定排程
             var scheduler = StdSchedulerFactory.GetDefaultScheduler().GetAwaiter().GetResult();

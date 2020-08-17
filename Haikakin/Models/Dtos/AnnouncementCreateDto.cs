@@ -4,12 +4,10 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Haikakin.Models.AnnouncementModel
+namespace Haikakin.Models.Dtos
 {
-    public class Announcement
+    public class AnnouncementCreateDto
     {
-        [Key]
-        public int AnnouncementId { get; set; }
         [StringLength(100)]
         public string Title { get; set; }
         [StringLength(200)]

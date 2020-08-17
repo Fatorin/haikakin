@@ -59,6 +59,11 @@ namespace Haikakin.Repository
             return _db.Orders.Where(u => u.UserId == userId).ToList();
         }
 
+        public ICollection<Order> GetOrdersWithTimeRange(DateTime startTime, DateTime endTime)
+        {
+            return _db.Orders.Where(o => o.OrderCreateTime >= startTime).Where(o => o.OrderCreateTime <= endTime).ToList();
+        }
+
         public bool OrderExists(int id)
         {
             bool value = _db.Orders.Any(u => u.OrderId == id);

@@ -94,7 +94,7 @@ namespace Haikakin.Models.OrderScheduler
             .Build();
             var trigger = TriggerBuilder
             .Create()
-            .StartAt(DateTimeOffset.Now.AddHours(1))
+            .StartAt(DateTimeOffset.Now.AddMinutes(70))
             .Build();
             //call the scheduler.ScheduleJob
             return scheduler.ScheduleJob(jobDetails, trigger);
