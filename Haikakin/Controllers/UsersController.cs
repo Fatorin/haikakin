@@ -179,7 +179,7 @@ namespace Haikakin.Controllers
             var newPassword = Encrypt.HMACSHA256(userDto.UserPassword, _appSettings.UserSecret);
 
             user.Password = newPassword;
-            if (_userRepo.UpdateUser(user))
+            if (!_userRepo.UpdateUser(user))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
             }

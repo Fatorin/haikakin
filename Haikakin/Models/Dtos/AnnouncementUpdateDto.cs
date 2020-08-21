@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 
 namespace Haikakin.Models.Dtos
 {
-    public class AnnouncementCreateDto
+    public class AnnouncementUpdateDto
     {
+        [Required]
+        public int AnnouncementId { get; set; }
         [StringLength(100)]
         public string Title { get; set; }
         [StringLength(200)]

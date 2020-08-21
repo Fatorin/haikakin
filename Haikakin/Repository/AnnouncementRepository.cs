@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static Haikakin.Models.Order;
+using Haikakin.Models.OrderModel;
 using static Haikakin.Repository.IRepository.IAnnouncementRepository;
 
 namespace Haikakin.Repository
@@ -41,6 +41,11 @@ namespace Haikakin.Repository
                 datas.Reverse();
                 return datas;
             }
+        }
+
+        public Announcement GetAnnouncement(int id)
+        {            
+            return _db.Announcements.SingleOrDefault(ann => ann.AnnouncementId == id);
         }
 
         public bool CreateAnnouncement(Announcement announcement)

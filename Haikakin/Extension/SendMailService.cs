@@ -37,9 +37,9 @@ namespace Haikakin.Extension
             client.Authenticator =
                 new HttpBasicAuthenticator("api", _mailApiKey);
             RestRequest request = new RestRequest();
-            request.AddParameter("domain", "mail.haikakin.com", ParameterType.UrlSegment);
+            request.AddParameter("domain", "haikakin.com", ParameterType.UrlSegment);
             request.Resource = "{domain}/messages";
-            request.AddParameter("from", "Haikakin Service <service@mail.haikakin.com>");
+            request.AddParameter("from", "Haikakin Service <notification@haikakin.com>");
             request.AddParameter("to", $"{model.Email}");
             request.AddParameter("subject", model.EmailTitle);
             request.AddParameter("html", model.EmailBody);

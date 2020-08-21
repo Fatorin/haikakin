@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using Haikakin.Extension;
 using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
-using Haikakin.Models.UploadValidation;
+using Haikakin.Models.Dtos;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -50,17 +52,20 @@ namespace Haikakin.Controllers
         /// <returns></returns>
         [HttpPost("GetProductInfo")]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductInfo))]
         [Authorize(Roles = "Admin")]
         public IActionResult GetProductInfo(int productInfoId)
         {
             var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+            //解密
             var key = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
-            var sb = new StringBuilder(key);
-            sb.Remove(4, 8);
-            sb.Insert(4, "*", 8);
-            key = sb.ToString();
-            productInfo.Serial = key;
+            //加密
+            productInfo.Serial = key.SerialEncrypt();
+            if (productInfo.Serial==null)
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "序號解密錯誤" });
+            }
 
             if (productInfo == null)
             {
@@ -79,7 +84,7 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Roles = "Admin")]
-        public IActionResult CreateProductInfo([FromForm] UploadProductInfoModel productInfoFile)
+        public IActionResult CreateProductInfo([FromForm] ProductInfoUploadDto productInfoFile)
         {
             if (productInfoFile == null)
             {

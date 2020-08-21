@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
-using static Haikakin.Models.Order;
+using static Haikakin.Models.OrderModel.Order;
 
 namespace Haikakin.Models.Dtos
 {

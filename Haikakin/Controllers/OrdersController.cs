@@ -21,7 +21,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
-using static Haikakin.Models.Order;
+using static Haikakin.Models.OrderModel.Order;
 
 namespace Haikakin.Controllers
 {

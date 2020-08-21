@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Haikakin.Models
+namespace Haikakin.Models.UploadModel
 {
     public class MaxFileSizeAttribute : ValidationAttribute
     {

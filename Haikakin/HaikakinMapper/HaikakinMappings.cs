@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Haikakin.Models.OrderModel;
 
 namespace Haikakin.HaikakinMapper
 {
@@ -16,7 +17,6 @@ namespace Haikakin.HaikakinMapper
         {
             CreateMap<Order, OrderDto>().ReverseMap();
             CreateMap<Order, OrderCreateDto>().ReverseMap();
-            CreateMap<Product, ProductDto>().ReverseMap();
             CreateMap<Product, ProductUpsertDto>().ReverseMap();
             CreateMap<Announcement, AnnouncementCreateDto>().ReverseMap();
         }

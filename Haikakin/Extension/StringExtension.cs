@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Haikakin.Extension
@@ -29,6 +31,26 @@ namespace Haikakin.Extension
             }
 
             return result;
+        }
+
+        public static string SerialEncrypt(this string source)
+        {
+            StringBuilder sb = new StringBuilder(source);
+
+            string rgxStr = @"\-";
+            Regex rgx = new Regex(rgxStr);
+            var matches = rgx.Matches(sb.ToString());
+            if (matches.Count < 0)
+                return null;
+            for (int i = 0; i < matches.Count - 1; i++)
+            {
+                int len = matches[i + 1].Index - matches[i].Index - 1;
+                int adjustStart = matches[i].Index + 1;
+                sb.Remove(adjustStart, len);
+                sb.Insert(adjustStart, "*", len);
+            }
+
+            return sb.ToString();
         }
     }
 }

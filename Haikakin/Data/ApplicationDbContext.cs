@@ -1,4 +1,5 @@
 ﻿using Haikakin.Models;
+using Haikakin.Models.OrderModel;
 using Haikakin.Models.AnnouncementModel;
 using Microsoft.EntityFrameworkCore;
 using System;

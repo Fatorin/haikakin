@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using ClosedXML.Excel;
 using Haikakin.Models;
 using Haikakin.Models.OrderModel;
-using Haikakin.Models.UploadValidation;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -154,62 +153,6 @@ namespace Haikakin.Controllers
             workbook.SaveAs(stream);
             stream.Close();
             return new FileContentResult(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        }
-
-        [HttpGet("GetImages")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetImages()
-        {
-            var folderPath = $"/var/www/UploadImages/";
-            if (!Directory.Exists(folderPath))
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的資料夾" });
-            var filePaths = Directory.GetFiles(folderPath);
-            for (int i = 0; i < filePaths.Length; i++)
-            {
-                filePaths[i] = filePaths[i].Replace("/var/www", "");
-            }
-            return Ok(filePaths);
-        }
-
-        [HttpPost("UploadImage")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UploadImage([FromForm] UploadImageModel fileObj)
-        {
-            if (fileObj == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "無法接收檔案" });
-            }
-
-            var file = fileObj.Photo;
-            var folderPath = $"/var/www/UploadImages/";
-            var filePath = Path.GetRandomFileName().Replace(".", "");
-            var fileExt = Path.GetExtension(file.FileName);
-            var fileFullPath = $"{filePath}{fileExt}";
-            //沒資料夾就不產生
-            if (!Directory.Exists(folderPath))
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有對應的資料夾" });
-            //檔名重複才增加
-            var x = 1;
-            while (System.IO.File.Exists(fileFullPath))
-            {
-                fileFullPath = $"{filePath}{x}{fileExt}";
-                x += 1;
-            }
-
-            using (var stream = System.IO.File.Create($"{folderPath}{fileFullPath}"))
-            {
-                await file.CopyToAsync(stream);
-            }
-            // Process uploaded files
-            // Don't rely on or trust the FileName property without validation.
-
-            return Ok();
         }
 
         //Token新機制

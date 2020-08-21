@@ -1,13 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Haikakin.Models.UploadModel;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Haikakin.Models.UploadValidation
+namespace Haikakin.Models.Dtos
 {
-    public class UploadProductInfoModel
+    public class ProductInfoUploadDto
     {
         public int ProductId { get; set; }
         public decimal PrimeCost { get; set; }

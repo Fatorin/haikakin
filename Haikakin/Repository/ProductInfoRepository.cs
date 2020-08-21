@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static Haikakin.Models.Order;
+using Haikakin.Models.OrderModel;
 
 namespace Haikakin.Repository
 {

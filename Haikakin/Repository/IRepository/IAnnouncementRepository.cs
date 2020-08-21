@@ -10,6 +10,8 @@ namespace Haikakin.Repository.IRepository
     {
         ICollection<Announcement> GetAnnouncements(QueryMode queryMode);
 
+        Announcement GetAnnouncement(int id);
+
         bool AnnouncementExists(int id);
 
         bool CreateAnnouncement(Announcement announcement);

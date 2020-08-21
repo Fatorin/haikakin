@@ -6,7 +6,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 
-namespace Haikakin.Models
+namespace Haikakin.Models.OrderModel
 {
     public class OrderInfo
     {
