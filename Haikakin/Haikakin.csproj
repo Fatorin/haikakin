@@ -35,18 +35,18 @@
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.0.1" />
     <PackageReference Include="ClosedXML" Version="0.95.3" />
     <PackageReference Include="EFCore.NamingConventions" Version="1.1.0" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.48.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.49.0" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.24" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="3.1.7" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.7" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="4.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning.ApiExplorer" Version="4.1.1" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.0.0">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.6">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.1.7">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -57,11 +57,14 @@
     <PackageReference Include="Quartz" Version="3.1.0" />
     <PackageReference Include="RestSharp" Version="106.11.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="5.5.1" />
-    <PackageReference Include="Twilio" Version="5.45.1" />
+    <PackageReference Include="Twilio" Version="5.46.0" />
     <PackageReference Include="Twilio.AspNet.Core" Version="5.33.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="EmailTemplates\Admin.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="EmailTemplates\Account.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

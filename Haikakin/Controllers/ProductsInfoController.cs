@@ -41,7 +41,15 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult GetProductInfos()
         {
-            var productInfoList = _productInfoRepo.GetProductInfos().ToList();
+            var productInfoList = _productInfoRepo.GetProductInfos();
+            foreach (var productInfo in productInfoList)
+            {
+                //解密
+                var key = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+                //加密
+                productInfo.Serial = key.SerialEncrypt();
+            }
+
             return Ok(productInfoList);
         }
 
@@ -62,7 +70,7 @@ namespace Haikakin.Controllers
             var key = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
             //加密
             productInfo.Serial = key.SerialEncrypt();
-            if (productInfo.Serial==null)
+            if (productInfo.Serial == null)
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "序號解密錯誤" });
             }
@@ -88,7 +96,7 @@ namespace Haikakin.Controllers
         {
             if (productInfoFile == null)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請確認是否有上傳檔案" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "接收資料異常" });
             }
 
             if (!_productRepo.ProductExists(productInfoFile.ProductId))
@@ -99,6 +107,11 @@ namespace Haikakin.Controllers
             var count = 0;
             var failTimes = 0;
             var file = productInfoFile.SerialFile;
+            if (file == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請確認是否有上傳檔案" });
+            }
+
             if (file.Length > 0)
             {
                 StreamReader reader = new StreamReader(file.OpenReadStream());
@@ -110,6 +123,7 @@ namespace Haikakin.Controllers
                         failTimes++;
                         continue;
                     }
+
                     var encryptSerial = CryptoUtil.EncryptAESHex(serial.Trim(), _appSettings.SerialHashKey, _appSettings.SerialHashIV);
                     var productInfo = new ProductInfo()
                     {
@@ -120,7 +134,7 @@ namespace Haikakin.Controllers
                         PrimeCost = productInfoFile.PrimeCost
                     };
                     //有重複序號會自己跳過
-                    if (_productInfoRepo.ProductInfoSerialExists(serial))
+                    if (_productInfoRepo.ProductInfoSerialExists(productInfoFile.ProductId, encryptSerial))
                     {
                         failTimes++;
                         continue;
@@ -139,31 +153,77 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 更新特定產品序號，Admin限定
         /// </summary>
-        /// <param name="productInfoId"></param>
-        /// <param name="serial"></param>
+        /// <param name="model"></param>
         /// <returns></returns>
-        [HttpPatch("UpdateProductInfoSerial")]
+        [HttpPatch("UpdateProductInfo")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [Authorize(Roles = "Admin")]
-        public IActionResult UpdateProductInfoSerial(int productInfoId, string serial)
+        public IActionResult UpdateProductInfo(ProductInfoDto model)
         {
-            var productInfo = _productInfoRepo.GetProductInfo(productInfoId);
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
+            }
+
+            var productInfo = _productInfoRepo.GetProductInfo(model.ProductInfoId);
 
             if (productInfo == null)
             {
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的項目" });
             }
-            var encryptSerial = CryptoUtil.EncryptAESHex(serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
-            productInfo.Serial = encryptSerial;
+
+            if (string.IsNullOrEmpty(model.Serial))
+            {
+                var encryptSerial = CryptoUtil.EncryptAESHex(model.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+                productInfo.Serial = encryptSerial;
+            }
+
+            productInfo.ProductStatus = model.ProductStatus;
+            productInfo.PrimeCost = model.PrimeCost;
+            productInfo.LastUpdateTime = DateTime.UtcNow;
 
             if (!_productInfoRepo.UpdateProductInfo(productInfo))
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新序號錯誤" });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "更新錯誤" });
             }
 
-            return NoContent();
+            return Ok();
+        }
+
+        /// <summary>
+        /// 刪除特定產品序號，Admin限定
+        /// </summary>
+        /// <param name="productInfoId"></param>
+        /// <returns></returns>
+        [HttpDelete("DeleteProductInfo")]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Authorize(Roles = "Admin")]
+        public IActionResult DeleteProductInfo(int productInfoId)
+        {
+            var obj = _productInfoRepo.GetProductInfo(productInfoId);
+
+            if (obj == null)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "找不到對應的序號" });
+            }
+
+            if (obj.ProductStatus != ProductInfo.ProductStatusEnum.NotUse)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "此序號已鎖定或已使用" });
+            }
+
+            if (!_productInfoRepo.DeleteProductInfo(obj.ProductInfoId))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "刪除序號失敗" });
+            }
+
+            return Ok();
         }
     }
 }

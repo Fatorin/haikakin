@@ -58,6 +58,12 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrderInUserForAdmin(System.Int32)">
+            <summary>
+            獲得當前用戶的所有訂單
+            </summary>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.ProductsController.GetProducts">
             <summary>
             獲得全部商品資訊
@@ -105,12 +111,18 @@
             <param name="productInfoFile"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.ProductsInfoController.UpdateProductInfoSerial(System.Int32,System.String)">
+        <member name="M:Haikakin.Controllers.ProductsInfoController.UpdateProductInfo(Haikakin.Models.Dtos.ProductInfoDto)">
             <summary>
             更新特定產品序號，Admin限定
             </summary>
+            <param name="model"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.ProductsInfoController.DeleteProductInfo(System.Int32)">
+            <summary>
+            刪除特定產品序號，Admin限定
+            </summary>
             <param name="productInfoId"></param>
-            <param name="serial"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(System.String)">
@@ -268,6 +280,18 @@
             </summary>
             <param name="source">欲轉換之字串</param>
             <returns></returns>
+        </member>
+        <member name="P:Haikakin.Models.Dtos.ProductInfoDto.ProductInfoId">
+            流水號
+        </member>
+        <member name="P:Haikakin.Models.Dtos.ProductInfoDto.Serial">
+            序號(須加密)
+        </member>
+        <member name="P:Haikakin.Models.Dtos.ProductInfoDto.PrimeCost">
+            進貨價
+        </member>
+        <member name="P:Haikakin.Models.Dtos.ProductInfoDto.ProductStatus">
+            已使用、已鎖定、已使用
         </member>
         <member name="P:Haikakin.Models.ECPayModel.ECPayCVSExtendArguments.StoreExpireDate">
             <summary>

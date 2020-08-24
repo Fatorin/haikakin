@@ -2,14 +2,21 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
+using Haikakin.Extension;
+using Haikakin.Extension.NewebPayUtil;
+using Haikakin.Extension.Services;
 using Haikakin.Models;
+using Haikakin.Models.MailModel;
 using Haikakin.Models.OrderModel;
+using Haikakin.Models.QueryModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using static Haikakin.Models.User;
 
@@ -25,14 +32,18 @@ namespace Haikakin.Controllers
         private IOrderInfoRepository _orderInfoRepo;
         private IProductRepository _productRepo;
         private IProductInfoRepository _productInfoRepo;
+        private readonly AppSettings _appSettings;
+        private readonly IMemoryCache _memoryCache;
 
-        public AdminController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IOptions<AppSettings> appSettings)
+        public AdminController(IUserRepository userRepo, IOrderRepository orderRepo, IOrderInfoRepository orderInfoRepo, IProductRepository productRepo, IProductInfoRepository productInfoRepo, IOptions<AppSettings> appSettings, IMemoryCache memoryCache)
         {
             _userRepo = userRepo;
             _orderRepo = orderRepo;
             _orderInfoRepo = orderInfoRepo;
             _productRepo = productRepo;
             _productInfoRepo = productInfoRepo;
+            _appSettings = appSettings.Value;
+            _memoryCache = memoryCache;
         }
 
         /// <summary>
@@ -62,6 +73,64 @@ namespace Haikakin.Controllers
             SetTokenCookie(response.RefreshToken);
 
             return Ok(response);
+        }
+
+        /// <summary>
+        ///要求二階段驗證
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpGet("AuthenticateAdminTwoFaceRequest")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult AuthenticateAdminTwoFaceRequest()
+        {
+            //要求驗證碼
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+
+            if (role != "Admin")
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            int userId= int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+
+            var user = _userRepo.GetUser(userId);
+            var model = new EmailAdmin();
+            model.UserName=user.Username;
+            model.UserEmail=user.Email;
+            //產生隨機驗證碼，存到快取裡面5分鐘
+            //model.Code==;
+
+            var mailService = new SendMailService(_appSettings.MailgunAPIKey);
+            mailService.AdminMailBuild(model);
+
+            return Ok();
+        }
+
+        /// <summary>
+        ///要求二階段驗證
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpPost("AuthenticateAdminTwoFaceResponse")]
+        [Authorize(Roles = "Admin")]
+        public IActionResult AuthenticateAdminTwoFaceResponse([FromBody] string code)
+        {
+            //檢查傳進來的驗證碼
+
+            return Ok();
         }
 
         [HttpGet("GetUsersByAdmin")]
@@ -108,6 +177,13 @@ namespace Haikakin.Controllers
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
                 var productInfos = new List<string>();
                 var serialList = _productInfoRepo.GetProductInfosByOrderInfoId(orderInfo.OrderInfoId).Select(x => x.Serial).ToList();
+                for (int i = 0; i < serialList.Count; i++)
+                {
+                    //解密
+                    var key = CryptoUtil.DecryptAESHex(serialList[i], _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+                    //加密
+                    serialList[i] = key.SerialEncrypt();
+                }
                 productInfos.AddRange(serialList);
                 orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count, serialList));
             }
@@ -131,20 +207,20 @@ namespace Haikakin.Controllers
             return Ok(orderRespModel);
         }
 
-        [HttpGet("GetReport")]
+        [HttpPost("GetReport")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        public async Task<IActionResult> GetReport([FromBody] DateTime queryStartTime, DateTime queryLastTime)
+        public async Task<IActionResult> GetReport([FromBody] Query model)
         {
-            if (queryStartTime == null || queryLastTime == null)
+            if (model == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "日期時間錯誤" });
             }
 
-            var objList = _orderRepo.GetOrdersWithTimeRange(queryStartTime, queryLastTime);
+            var objList = _orderRepo.GetOrdersWithTimeRange(model.StartTime.ToUniversalTime(), model.LastTime.ToUniversalTime());
 
-            var workbook = await GenerateReport(objList);
+            var workbook = await GenerateReport(objList).ConfigureAwait(true);
 
             if (workbook == null)
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "無法產生報表" });

@@ -11,7 +11,6 @@ namespace Haikakin.Models
     public class User
     {
         [Key]
-        [JsonIgnore]
         public int UserId { get; set; }
         [Required]
         public string Username { get; set; }

@@ -17,9 +17,11 @@ namespace Haikakin.Repository.IRepository
 
         bool ProductInfoExists(int id);
 
-        bool ProductInfoSerialExists(string Serial);
+        bool ProductInfoSerialExists(int productId, string Serial);
 
         bool CreateProductInfo(ProductInfo productInfo);
+
+        bool DeleteProductInfo(int productInfoId);
 
         bool UpdateProductInfo(ProductInfo productInfo);
 

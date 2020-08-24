@@ -6,7 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Web;
 using AutoMapper;
-using Haikakin.Extension;
+using Haikakin.Extension.Services;
 using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
@@ -118,6 +118,7 @@ namespace Haikakin.Controllers
             foreach (var orderInfo in obj.OrderInfos)
             {
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
+                var keys = _productInfoRepo.GetProductInfosByOrderInfoId(orderId);
                 orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count, null));
             }
 
@@ -219,7 +220,7 @@ namespace Haikakin.Controllers
                 itemsNameList.Add($"{product.ProductName} x {dto.OrderCount}");
             }
             //用爬蟲抓匯率
-            decimal exchange = ExchangeParse.GetExchange();
+            decimal exchange = ExchangeParseService.GetExchange();
             //產生訂單物件
             var orderObj = new Order()
             {
@@ -269,7 +270,7 @@ namespace Haikakin.Controllers
         /// <param name=""></param>
         /// <returns></returns>
         [HttpPost("FinishOrder")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
@@ -278,7 +279,7 @@ namespace Haikakin.Controllers
         {
             if (newebPayModel == null)
             {
-                _logger.LogInformation("資料請求異常");
+                _logger.LogInformation("藍新資料格式異常");
                 return BadRequest("資料請求異常");
             }
 
@@ -317,7 +318,7 @@ namespace Haikakin.Controllers
 
             if (order.OrderStatus == OrderStatusType.Over)
             {
-                _logger.LogInformation("資料請求異常");
+                _logger.LogInformation("特店訂單已結束");
                 return BadRequest("訂單已結束");
             }
 
@@ -366,8 +367,8 @@ namespace Haikakin.Controllers
                         _logger.LogInformation("特店系統異常_ProductInfo更新異常");
                         return BadRequest("特店系統異常");
                     };
-                    productInfo.Serial = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
-                    orderContext.Append($"{productInfo.Serial}<br>");
+                    var realKey = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
+                    orderContext.Append($"{realKey}<br>");
                 }
 
                 emailInfo.OrderContext = orderContext.ToString();
@@ -395,7 +396,7 @@ namespace Haikakin.Controllers
                 return BadRequest("特店系統異常");
             };
 
-            return NoContent();
+            return Ok();
         }
 
         /// <summary>
@@ -482,6 +483,33 @@ namespace Haikakin.Controllers
             var userId = identity.FindFirst(ClaimTypes.Name).Value;
 
             var objList = _orderRepo.GetOrdersInUser(int.Parse(userId));
+
+            if (objList == null)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此使用者" });
+            }
+
+            var objDto = new List<OrderDto>();
+            foreach (var obj in objList)
+            {
+                objDto.Add(_mapper.Map<OrderDto>(obj));
+            }
+
+            return Ok(objDto);
+        }
+
+        /// <summary>
+        /// 獲得當前用戶的所有訂單
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("GetOrderInUserForAdmin")]
+        [ProducesResponseType(200, Type = typeof(List<OrderDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetOrderInUserForAdmin(int userId)
+        {
+            var objList = _orderRepo.GetOrdersInUser(userId);
 
             if (objList == null)
             {

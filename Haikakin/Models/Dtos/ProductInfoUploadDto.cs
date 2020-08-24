@@ -12,7 +12,6 @@ namespace Haikakin.Models.Dtos
     {
         public int ProductId { get; set; }
         public decimal PrimeCost { get; set; }
-        [Required(ErrorMessage = "Error format or size too big.")]
         [DataType(DataType.Upload)]
         [MaxFileSize(5 * 1024 * 1024)]
         [AllowedExtensions(new string[] { ".txt" })]

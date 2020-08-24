@@ -21,10 +21,15 @@ namespace Haikakin.Repository
 
         public bool CreateProductInfo(ProductInfo productInfo)
         {
-            _db.ProductInfos.Add(productInfo);
             var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
+
+            if (product == null) return false;
+
+            _db.ProductInfos.Add(productInfo);
             product.Stock += 1;
+
             _db.Products.Update(product);
+
             return Save();
         }
 
@@ -33,13 +38,18 @@ namespace Haikakin.Repository
             if (productInfo == null) return false;
 
             _db.ProductInfos.Update(productInfo);
-            if (productInfo.ProductStatus == ProductInfo.ProductStatusEnum.NotUse)
-            {
-                //更新庫存
-                var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
-                product.Stock += 1;
-                _db.Products.Update(product);
-            }
+
+            //更新庫存
+            var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
+            
+            int count = _db.ProductInfos.Where(
+                p => p.ProductId == product.ProductId &&
+                p.ProductStatus == ProductInfo.ProductStatusEnum.NotUse)
+                .Count();
+
+            product.Stock = count;
+
+            _db.Products.Update(product);
 
             return Save();
         }
@@ -47,6 +57,13 @@ namespace Haikakin.Repository
         public ProductInfo GetProductInfo(int productInfoId)
         {
             return _db.ProductInfos.SingleOrDefault(p => p.ProductInfoId == productInfoId);
+        }
+
+        public bool DeleteProductInfo(int productInfoId)
+        {
+            var obj = _db.ProductInfos.SingleOrDefault(p => p.ProductInfoId == productInfoId);
+            _db.ProductInfos.Remove(obj);
+            return Save();
         }
 
         public ICollection<ProductInfo> GetProductInfos()
@@ -64,9 +81,9 @@ namespace Haikakin.Repository
             return value;
         }
 
-        public bool ProductInfoSerialExists(string serial)
+        public bool ProductInfoSerialExists(int productId, string serial)
         {
-            bool value = _db.ProductInfos.Any(u => u.Serial == serial);
+            bool value = _db.ProductInfos.Any(u => u.Serial == serial && u.ProductId == productId);
             return value;
         }
 

@@ -14,7 +14,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Haikakin.Extension
+namespace Haikakin.Extension.Services
 {
     public class SendMailService
     {
@@ -76,6 +76,17 @@ namespace Haikakin.Extension
             body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
 
             return SendMailActive(new EmailModel(model.Email, title, body));
+        }
+
+        public bool AdminMailBuild(EmailAdmin model)
+        {
+            var title = "Haikakin 後台二階段驗證信";
+            string body = File.ReadAllText(Path.Combine("EmailTemplates/Admin.html"));
+            body = body.Replace("#username", $"{model.UserName}");
+            body = body.Replace("#code", model.Code);
+            body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
+
+            return SendMailActive(new EmailModel(model.UserEmail, title, body));
         }
     }
 }

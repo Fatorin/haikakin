@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace Haikakin.Extension
+namespace Haikakin.Extension.Services
 {
-    public static class ExchangeParse
+    public static class ExchangeParseService
     {
         public static decimal GetExchange()
         {

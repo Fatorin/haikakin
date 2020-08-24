@@ -51,6 +51,22 @@ namespace Haikakin.Controllers
             return Ok(list);
         }
 
+        [HttpGet("GetAnnounment")]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Announcement))]
+        [Authorize(Roles = "Admin,User")]
+        public IActionResult GetAnnounment(int id)
+        {
+            var obj = _announcementRepo.GetAnnouncement(id);
+
+            if (obj == null)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的公告" });
+            }
+
+            return Ok(obj);
+        }
+
         [HttpPatch("CreateAnnounment")]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
