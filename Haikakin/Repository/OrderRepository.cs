@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Haikakin.Models.OrderModel;
+using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Repository
 {
@@ -60,9 +61,13 @@ namespace Haikakin.Repository
             return _db.Orders.Where(u => u.UserId == userId).ToList();
         }
 
-        public ICollection<Order> GetOrdersWithTimeRange(DateTime startTime, DateTime endTime)
+        public ICollection<Order> GetOrdersWithTimeRange(QueryOrder model)
         {
-            return _db.Orders.Where(o => o.OrderCreateTime >= startTime).Where(o => o.OrderCreateTime <= endTime).ToList();
+            var startTime = model.StartTime;
+            var lastTime = model.LastTime;
+            var stats = model.OrderStatus;
+
+            return _db.Orders.Where(o => o.OrderCreateTime >= startTime && o.OrderCreateTime <= lastTime && o.OrderStatus == stats).ToList();
         }
 
         public bool OrderExists(int id)

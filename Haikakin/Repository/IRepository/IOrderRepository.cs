@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Haikakin.Models.OrderModel;
+using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Repository.IRepository
 {
@@ -14,7 +15,7 @@ namespace Haikakin.Repository.IRepository
 
         ICollection<Order> GetOrdersInUser(int userId);
 
-        ICollection<Order> GetOrdersWithTimeRange(DateTime startTime,DateTime endTime);
+        ICollection<Order> GetOrdersWithTimeRange(QueryOrder model);
 
         Order GetOrder(int orderId);
 

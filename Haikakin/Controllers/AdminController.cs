@@ -81,6 +81,7 @@ namespace Haikakin.Controllers
         /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet("AuthenticateAdminTwoFaceRequest")]
         [Authorize(Roles = "Admin")]
@@ -101,17 +102,21 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
             }
 
-            int userId= int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+            int userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
 
             var user = _userRepo.GetUser(userId);
             var model = new EmailAdmin();
-            model.UserName=user.Username;
-            model.UserEmail=user.Email;
-            //產生隨機驗證碼，存到快取裡面5分鐘
-            //model.Code==;
-
+            model.UserName = user.Username;
+            model.UserEmail = user.Email;
+            //產生隨機驗證碼，存到快取裡面3分鐘
+            var code = SmsRandomNumber.CreatedAdmin();
+            _memoryCache.Set(userId, code, TimeSpan.FromMinutes(3));
+            model.Code = code;
             var mailService = new SendMailService(_appSettings.MailgunAPIKey);
-            mailService.AdminMailBuild(model);
+            if (!mailService.AdminMailBuild(model))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱驗證異常" });
+            }
 
             return Ok();
         }
@@ -129,6 +134,31 @@ namespace Haikakin.Controllers
         public IActionResult AuthenticateAdminTwoFaceResponse([FromBody] string code)
         {
             //檢查傳進來的驗證碼
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            var role = identity.FindFirst(ClaimTypes.Role).Value;
+
+            if (role != "Admin")
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            int userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+
+            if (!_memoryCache.TryGetValue(userId, out string value))
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼已過期，請重新請求" });
+            }
+
+            if (value != code)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼不一致，請重新輸入" });
+            }
 
             return Ok();
         }
@@ -211,14 +241,14 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        public async Task<IActionResult> GetReport([FromBody] Query model)
+        public async Task<IActionResult> GetReport([FromBody] QueryOrder model)
         {
             if (model == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "日期時間錯誤" });
             }
 
-            var objList = _orderRepo.GetOrdersWithTimeRange(model.StartTime.ToUniversalTime(), model.LastTime.ToUniversalTime());
+            var objList = _orderRepo.GetOrdersWithTimeRange(model);
 
             var workbook = await GenerateReport(objList).ConfigureAwait(true);
 

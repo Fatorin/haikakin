@@ -19,6 +19,18 @@ namespace Haikakin.Extension
             return sb.ToString();
         }
 
+        public static string CreatedAdmin()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("H-");
+            for (int i = 0; i < 6; i++)
+            {
+                sb.Append(Next(9));
+            }
+
+            return sb.ToString();
+        }
+
         private static int Next(int max)
         {
             byte[] rb = new byte[4];
