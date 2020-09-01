@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 using static Haikakin.Models.OrderModel.Order;
+using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Controllers
 {
@@ -62,9 +63,9 @@ namespace Haikakin.Controllers
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(List<OrderDto>))]
         [Authorize(Roles = "Admin")]
-        public IActionResult GetOrders()
+        public IActionResult GetOrders([FromBody] QueryOrder model)
         {
-            var objList = _orderRepo.GetOrders();
+            var objList = _orderRepo.GetOrdersWithTimeRange(model);
 
             var objDto = new List<OrderDto>();
 

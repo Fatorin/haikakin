@@ -1,5 +1,8 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Security.Claims;
+using System.Text;
 using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.OrderScheduler;
@@ -34,15 +37,18 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 簡訊驗證手機
         /// </summary>
-        /// <param name="phoneNumber"></param>
         /// <returns></returns>
         [AllowAnonymous]
         [HttpPost("SmsAuthenticate")]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult SmsVerityCode(string phoneNumber)
+        public IActionResult SmsVerityCode(string phoneNumber, bool isTaiwanNumber)
         {
+            if (string.IsNullOrEmpty(phoneNumber))
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有輸入電話號碼" });
+            }
             //檢查該手機號碼是否註冊過
             var smsModel = _smsRepo.GetSmsModel(phoneNumber);
             if (smsModel != null)
@@ -53,26 +59,9 @@ namespace Haikakin.Controllers
             var randomString = SmsRandomNumber.CreatedNumber();
 
             //如果有回應則分析回傳結果
-            TwilioClient.Init(_appSettings.TwilioSmsAccountID, _appSettings.TwilioSmsAuthToken);
-
-            try
+            if (!SendMitakeSms(phoneNumber, randomString, isTaiwanNumber))
             {
-                var msg = MessageResource.Create(
-                        body: $"Your Haikakin Web Services verification code is:{randomString}",
-                        from: new Twilio.Types.PhoneNumber($"+12058138320"),
-                        to: new Twilio.Types.PhoneNumber($"+{phoneNumber}")
-                );
-
-                //確認回傳有無錯誤
-                if (msg.ErrorCode != null)
-                {
-                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼不正確或簡訊發送商異常" });
-                }
-            }
-            catch (TwilioException e)
-            {
-                Console.WriteLine(e);
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼不正確或簡訊發送商異常" });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統簡訊發送異常" });
             }
 
             //抓一下有沒有已存在的
@@ -152,76 +141,88 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
-        /*
-         * 三竹簡訊版本，未開通無法使用
-         * 
-        [AllowAnonymous]
-        [HttpPost("SmsAuthenticate")]
-        public IActionResult SmsVerityCodeExtra(string phoneNumber)
+        private bool SendTwiloSms(string randomString, string phoneNumber)
         {
-            //檢查該手機號碼是否註冊過
-            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
-            if (smsModel != null)
-            {
-                if (smsModel.IsUsed) return BadRequest(new { message = "Number was used." });
-            }
-            //產生驗證用字串
-            var randomString = SmsRandomNumber.CreatedNumber();
+            TwilioClient.Init(_appSettings.TwilioSmsAccountID, _appSettings.TwilioSmsAuthToken);
 
-            //產出簡訊服務
-            StringBuilder reqUrl = new StringBuilder();
-            reqUrl.Append("https://sms.mitake.com.tw/b2c/mtk/SmSend?&CharsetURL=UTF-8");
-            StringBuilder smsParams = new StringBuilder();
-            smsParams.Append($"username={_appSettings.SmsAccountID}");
-            smsParams.Append($"&password={_appSettings.SmsAccountPassword}");
-            smsParams.Append($"&dstaddr={phoneNumber}");
-            smsParams.Append($"&smbody=Your Haikakin Web Services verification code is:{randomString}");
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new
-            Uri(reqUrl.ToString()));
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            byte[] bs = Encoding.UTF8.GetBytes(smsParams.ToString());
-            request.ContentLength = bs.Length;
-            request.GetRequestStream().Write(bs, 0, bs.Length);
-            //接收回應
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            StreamReader sr = new StreamReader(response.GetResponseStream());
-            string result = sr.ReadToEnd();
-            //如果有回應則分析回傳結果
-            if (result == null)
+            try
             {
-                return BadRequest(new { message = "Sms send fail." });
-            }
-            //確認OK之後傳入DB裡面
+                var msg = MessageResource.Create(
+                        body: $"Your Haikakin Web Services verification code is:{randomString}",
+                        from: new Twilio.Types.PhoneNumber($"+12058138320"),
+                        to: new Twilio.Types.PhoneNumber($"+{phoneNumber}")
+                );
 
-            //抓一下有沒有已存在的
-            if (smsModel == null)
-            {
-                //沒有就幫他建立一個新的
-                smsModel = new SmsModel
+                //確認回傳有無錯誤
+                if (msg.ErrorCode != null)
                 {
-                    PhoneNumber = phoneNumber,
-                    VerityCode = randomString,
-                    VerityLimitTime = DateTime.UtcNow.AddDays(1)
-                };
-
-                if (!_smsRepo.CreateSmsModel(smsModel))
-                {
-                    return BadRequest(new { message = "Create smsCode fail." });
+                    return false;
                 }
+            }
+            catch (TwilioException e)
+            {
+                Console.WriteLine(e);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool SendMitakeSms(string phoneNumber, string randomString, bool isTaiwanNumber)
+        {
+            StringBuilder reqUrl = new StringBuilder();
+            reqUrl.Append("https://smsapi.mitake.com.tw/api/mtk/SmSend?&CharsetURL=UTF-8");
+
+            StringBuilder reqData = new StringBuilder();
+            reqData.Append($"username={_appSettings.MitakeSmsAccountID}");
+            reqData.Append($"&password={_appSettings.MitakeSmsAccountPassword}");
+
+            if (isTaiwanNumber)
+            {
+                string modifyToTaiwanFormatNumber = $"0{phoneNumber.Substring(3)}";
+                reqData.Append($"&dstaddr={modifyToTaiwanFormatNumber}");
             }
             else
             {
-                //更新驗證碼
-                smsModel.VerityCode = randomString;
-                if (!_smsRepo.UpdateSmsModel(smsModel))
-                {
-                    return BadRequest(new { message = "Refresh smsCode fail." });
-                }
+                reqData.Append($"&dstaddr={phoneNumber}");
             }
 
-            return Ok();
-        }*/
+            reqData.Append($"&smbody=Your Haikakin Web Services verification code is:{randomString}");
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(new Uri(reqUrl.ToString()));
+            request.Method = "POST";
+            request.ContentType = "application/x-www-form-urlencoded";
+
+            byte[] bs = Encoding.UTF8.GetBytes(reqData.ToString());
+            request.ContentLength = bs.Length;
+            request.GetRequestStream().Write(bs, 0, bs.Length);
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            StreamReader sr = new StreamReader(response.GetResponseStream());
+            string result = sr.ReadToEnd();
+
+            string resultCodeString = "statuscode";
+            int start = result.IndexOf(resultCodeString) + resultCodeString.Length + 1;
+
+            int resultSuccess = int.Parse(result.Substring(1, 1));
+            int resultCode = int.Parse(result.Substring(start, 1));
+
+            if (resultSuccess!=1)
+            {
+                return false;
+            }
+
+            if (resultCode > 4 || resultCode < 0)
+            {
+                return false;
+            }
+
+            if (resultCode > 4 || resultCode < 0)
+            {
+                return false;
+            }
+
+            return true;
+        }
 
     }
 }

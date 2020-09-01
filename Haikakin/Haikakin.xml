@@ -31,7 +31,7 @@
             <param name="orderId"> The id of the order</param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.GetOrders">
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrders(Haikakin.Models.QueryModel.QueryOrder)">
             <summary>
             獲得所有訂單，只有Admin可用
             </summary>
@@ -138,11 +138,10 @@
             <param name="productInfoId"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(System.String)">
+        <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(System.String,System.Boolean)">
             <summary>
             簡訊驗證手機
             </summary>
-            <param name="phoneNumber"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.UsersController.GetUser(System.Int32)">

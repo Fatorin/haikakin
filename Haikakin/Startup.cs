@@ -212,7 +212,9 @@ namespace Haikakin
             "https://localhost",
             "https://ccore.newebpay.com/MPG/mpg_gateway",
             "https://core.newebpay.com/MPG/mpg_gateway",
-            "https://postgate.ecpay.com.tw" };
+            "https://postgate.ecpay.com.tw",
+            "https://smsapi.mitake.com.tw"
+            };
             return allowRange.Contains(origin);
         }
     }

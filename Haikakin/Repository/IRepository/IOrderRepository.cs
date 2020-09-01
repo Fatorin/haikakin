@@ -11,8 +11,6 @@ namespace Haikakin.Repository.IRepository
 {
     public interface IOrderRepository
     {
-        ICollection<Order> GetOrders();
-
         ICollection<Order> GetOrdersInUser(int userId);
 
         ICollection<Order> GetOrdersWithTimeRange(QueryOrder model);
