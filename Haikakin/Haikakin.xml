@@ -138,7 +138,7 @@
             <param name="productInfoId"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(System.String,System.Boolean)">
+        <member name="M:Haikakin.Controllers.SmsController.SmsVerityCode(Haikakin.Models.Dtos.SmsModelDto)">
             <summary>
             簡訊驗證手機
             </summary>

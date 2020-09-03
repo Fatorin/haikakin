@@ -367,6 +367,11 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼不正確" });
             }
 
+            if (smsModel.VerityLimitTime < DateTime.UtcNow)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼已過期" });
+            }
+
             //註冊寫入db
             var user = _userRepo.Register(model);
 

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Haikakin.Extension;
 using Haikakin.Models;
+using Haikakin.Models.Dtos;
 using Haikakin.Models.OrderScheduler;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
@@ -43,14 +44,14 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public IActionResult SmsVerityCode(string phoneNumber, bool isTaiwanNumber)
+        public IActionResult SmsVerityCode([FromBody] SmsModelDto model)
         {
-            if (string.IsNullOrEmpty(phoneNumber))
+            if (string.IsNullOrEmpty(model.PhoneNumber))
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有輸入電話號碼" });
             }
             //檢查該手機號碼是否註冊過
-            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
+            var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
             if (smsModel != null)
             {
                 if (smsModel.IsUsed) return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼已註冊過" });
@@ -59,7 +60,7 @@ namespace Haikakin.Controllers
             var randomString = SmsRandomNumber.CreatedNumber();
 
             //如果有回應則分析回傳結果
-            if (!SendMitakeSms(phoneNumber, randomString, isTaiwanNumber))
+            if (!SendMitakeSms(model.PhoneNumber, randomString, model.isTaiwanNumber))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統簡訊發送異常" });
             }
@@ -70,9 +71,9 @@ namespace Haikakin.Controllers
                 //沒有就幫他建立一個新的
                 smsModel = new SmsModel
                 {
-                    PhoneNumber = phoneNumber,
+                    PhoneNumber = model.PhoneNumber,
                     VerityCode = randomString,
-                    VerityLimitTime = DateTime.UtcNow.AddDays(1)
+                    VerityLimitTime = DateTime.UtcNow.AddMinutes(5)
                 };
 
                 if (!_smsRepo.CreateSmsModel(smsModel))
@@ -84,6 +85,7 @@ namespace Haikakin.Controllers
             {
                 //更新驗證碼
                 smsModel.VerityCode = randomString;
+                smsModel.VerityLimitTime = DateTime.UtcNow.AddMinutes(5);
                 if (!_smsRepo.UpdateSmsModel(smsModel))
                 {
                     return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新驗證碼出錯" });
@@ -93,53 +95,6 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
-        [HttpPost("CheckSmsVerityCode")]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [Authorize(Roles = "User,Admin")]
-        public IActionResult CheckSmsVerityCode(string phoneNumber, string smsCode)
-        {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-
-            if (identity == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
-            }
-
-            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
-            var user = _userRepo.GetUser(userId);
-
-            if (user == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此用戶" });
-            }
-
-            //檢查該手機號碼是否註冊過
-            var smsModel = _smsRepo.GetSmsModel(phoneNumber);
-
-            if (smsModel == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "此號碼沒有使用過" });
-            }
-
-            if (smsModel.IsUsed)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "號碼已註冊過" });
-            }
-
-            if (smsModel.VerityCode != smsCode)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "錯誤的驗證碼" });
-            }
-
-            smsModel.IsUsed = true;
-            _smsRepo.UpdateSmsModel(smsModel);
-            user.PhoneNumber = phoneNumber;
-            user.PhoneNumberVerity = true;
-            _userRepo.UpdateUser(user);
-            return Ok();
-        }
 
         private bool SendTwiloSms(string randomString, string phoneNumber)
         {
@@ -206,7 +161,7 @@ namespace Haikakin.Controllers
             int resultSuccess = int.Parse(result.Substring(1, 1));
             int resultCode = int.Parse(result.Substring(start, 1));
 
-            if (resultSuccess!=1)
+            if (resultSuccess != 1)
             {
                 return false;
             }
