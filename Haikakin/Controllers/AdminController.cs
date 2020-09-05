@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
@@ -9,15 +12,16 @@ using Haikakin.Extension;
 using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Extension.Services;
 using Haikakin.Models;
+using Haikakin.Models.Dtos;
 using Haikakin.Models.MailModel;
 using Haikakin.Models.OrderModel;
-using Haikakin.Models.QueryModel;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -73,6 +77,48 @@ namespace Haikakin.Controllers
             SetTokenCookie(response.RefreshToken);
 
             return Ok(response);
+        }
+
+        /// <summary>
+        /// ReCAPTCHA我不是機器人的驗證
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [HttpPost("AuthenticateReCAPTCHA")]
+        [AllowAnonymous]
+        public async Task<IActionResult> AuthenticateReCAPTCHA([FromBody] ReCAPTCHADto obj)
+        {
+            if (obj == null)
+            {
+                BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒收到Token" });
+            }
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                string url = $"https://www.google.com/recaptcha/api/siteverify?secret=" +
+                    $"{"6LcjBMgZAAAAAIEKaaH6UB17Vth4cv-Py8w82Ylb"}&" +
+                    $"response={obj.Token}&" +
+                    $"remoteip={HttpContext.Connection.RemoteIpAddress}";
+
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                var data = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode && BotRules(JsonConvert.DeserializeObject<ReCAPTCHA>(data)))
+                {
+                    return Ok(data);
+                }
+                else
+                {
+                    return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "toekn錯誤或是系統驗證異常" });
+                }
+            }
         }
 
         /// <summary>
@@ -237,18 +283,13 @@ namespace Haikakin.Controllers
             return Ok(orderRespModel);
         }
 
-        [HttpPost("GetReport")]
+        [HttpGet("GetReport")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
-        public async Task<IActionResult> GetReport([FromBody] QueryOrder model)
+        public async Task<IActionResult> GetReport(DateTime startTime, DateTime endTime, short? orderStatus)
         {
-            if (model == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "日期時間錯誤" });
-            }
-
-            var objList = _orderRepo.GetOrdersWithTimeRange(model);
+            var objList = _orderRepo.GetOrdersWithTimeRange(startTime, endTime, orderStatus);
 
             var workbook = await GenerateReport(objList).ConfigureAwait(true);
 
@@ -279,6 +320,11 @@ namespace Haikakin.Controllers
             else
                 return HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
         }
+        private bool BotRules(ReCAPTCHA data)
+        {
+            if (data.Success && data.Score >= 0.5) return true;
+            else return false;
+        }
 
         private async Task<XLWorkbook> GenerateReport(ICollection<Order> orders)
         {
@@ -297,7 +343,8 @@ namespace Haikakin.Controllers
                         if (!flag)
                         {
                             flag = true;
-                            var firstModel = new ReportModel
+                            order.OrderFee = order.OrderFee ?? "0.0";
+                            ReportModel firstModel = new ReportModel
                             {
                                 OrderId = order.OrderId,
                                 //商品第一項名稱
@@ -319,7 +366,7 @@ namespace Haikakin.Controllers
                         }
                         else
                         {
-                            var otherModel = new ReportModel
+                            ReportModel otherModel = new ReportModel
                             {
                                 OrderItems = $"{tempProduct.ProductName}x{info.Count}",
                                 OrderCounts = $"{info.Count}",
@@ -328,6 +375,7 @@ namespace Haikakin.Controllers
                             };
                             voteResult.Add(otherModel);
                         }
+                        flag = false;
                     }
                 }
 

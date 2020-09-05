@@ -11,6 +11,13 @@
              <param name="model"></param>
              <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.AdminController.AuthenticateReCAPTCHA(Haikakin.Models.Dtos.ReCAPTCHADto)">
+            <summary>
+            ReCAPTCHA我不是機器人的驗證
+            </summary>
+            <param name="token"></param>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.AdminController.AuthenticateAdminTwoFaceRequest">
              <summary>
             要求二階段驗證
@@ -31,10 +38,13 @@
             <param name="orderId"> The id of the order</param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.GetOrders(Haikakin.Models.QueryModel.QueryOrder)">
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrders(System.DateTime,System.DateTime,System.Nullable{System.Int16})">
             <summary>
             獲得所有訂單，只有Admin可用
             </summary>
+            <param name="startTime"></param>
+            <param name="endTime"></param>
+            <param name="orderStatus">NonPayment, AlreadyPaid, Over, Cancel</param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrder(System.Int32)">
@@ -885,9 +895,6 @@
         </member>
         <member name="P:Haikakin.Models.ProductInfo.OrderInfoId">
             對應的訂單編號
-        </member>
-        <member name="P:Haikakin.Models.QueryModel.QueryOrder.OrderStatus">
-            NonPayment, AlreadyPaid, Over, Cancel ///
         </member>
     </members>
 </doc>

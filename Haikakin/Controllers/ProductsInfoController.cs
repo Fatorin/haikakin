@@ -58,7 +58,7 @@ namespace Haikakin.Controllers
         /// </summary>
         /// <param name="productInfoId"></param>
         /// <returns></returns>
-        [HttpPost("GetProductInfo")]
+        [HttpGet("GetProductInfo")]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ProductInfo))]

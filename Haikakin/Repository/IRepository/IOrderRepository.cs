@@ -1,11 +1,6 @@
-﻿using Haikakin.Models;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Haikakin.Models.OrderModel;
-using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Repository.IRepository
 {
@@ -13,7 +8,7 @@ namespace Haikakin.Repository.IRepository
     {
         ICollection<Order> GetOrdersInUser(int userId);
 
-        ICollection<Order> GetOrdersWithTimeRange(QueryOrder model);
+        ICollection<Order> GetOrdersWithTimeRange(DateTime startTime, DateTime endTime, short? orderStatus);
 
         Order GetOrder(int orderId);
 

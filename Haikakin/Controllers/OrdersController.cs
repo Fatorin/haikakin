@@ -22,7 +22,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 using static Haikakin.Models.OrderModel.Order;
-using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Controllers
 {
@@ -59,13 +58,16 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 獲得所有訂單，只有Admin可用
         /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="orderStatus">NonPayment, AlreadyPaid, Over, Cancel</param>
         /// <returns></returns>
-        [HttpGet]
+        [HttpGet("GetOrders")]
         [ProducesResponseType(200, Type = typeof(List<OrderDto>))]
         [Authorize(Roles = "Admin")]
-        public IActionResult GetOrders([FromBody] QueryOrder model)
+        public IActionResult GetOrders(DateTime startTime, DateTime endTime, short? orderStatus)
         {
-            var objList = _orderRepo.GetOrdersWithTimeRange(model);
+            var objList = _orderRepo.GetOrdersWithTimeRange(startTime, endTime, orderStatus);
 
             var objDto = new List<OrderDto>();
 

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Haikakin.Models.OrderModel;
-using Haikakin.Models.QueryModel;
 
 namespace Haikakin.Repository
 {
@@ -61,13 +60,32 @@ namespace Haikakin.Repository
             return _db.Orders.Where(u => u.UserId == userId).ToList();
         }
 
-        public ICollection<Order> GetOrdersWithTimeRange(QueryOrder model)
+        public ICollection<Order> GetOrdersWithTimeRange(DateTime startTime, DateTime endTime, short? orderStatus)
         {
-            var startTime = model.StartTime;
-            var lastTime = model.LastTime;
-            var stats = model.OrderStatus;
+            DateTime currentTime = DateTime.Now;
+            int year = currentTime.Year;
+            int month = currentTime.Month;
+            int firstDay = 1;
+            int lastDay = DateTime.DaysInMonth(year, month);
 
-            return _db.Orders.Where(o => o.OrderCreateTime >= startTime && o.OrderCreateTime <= lastTime && o.OrderStatus == stats).ToList();
+            if (startTime == DateTime.MinValue)
+            {
+                startTime = DateTime.Parse($"{year}/{month}/{firstDay}");
+            }
+
+            if (endTime == DateTime.MinValue)
+            {
+                endTime = DateTime.Parse($"{year}/{month}/{lastDay} 23:59:59");
+            }
+
+            if (orderStatus == null)
+            {
+                return _db.Orders.Where(o => o.OrderCreateTime >= startTime && o.OrderCreateTime <= endTime).ToList();
+            }
+            else
+            {
+                return _db.Orders.Where(o => o.OrderCreateTime >= startTime && o.OrderCreateTime <= endTime && o.OrderStatus == (Order.OrderStatusType)orderStatus).ToList();
+            }
         }
 
         public bool OrderExists(int id)

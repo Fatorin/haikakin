@@ -25,13 +25,11 @@ namespace Haikakin.Controllers
     public class SmsController : ControllerBase
     {
         private ISmsRepository _smsRepo;
-        private IUserRepository _userRepo;
         private readonly AppSettings _appSettings;
 
-        public SmsController(ISmsRepository smsRepo, IUserRepository userRepo, IOptions<AppSettings> appSettings)
+        public SmsController(ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
         {
             _smsRepo = smsRepo;
-            _userRepo = userRepo;
             _appSettings = appSettings.Value;
         }
 
