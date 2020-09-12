@@ -54,7 +54,7 @@ namespace Haikakin.Controllers
         [HttpGet("GetAnnounment")]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Announcement))]
-        [Authorize(Roles = "Admin,User")]
+        [AllowAnonymous]
         public IActionResult GetAnnounment(int id)
         {
             var obj = _announcementRepo.GetAnnouncement(id);

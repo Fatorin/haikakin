@@ -139,6 +139,7 @@ namespace Haikakin.Controllers
 
             productObj.ProductName = productDto.ProductName;
             productObj.Description = productDto.Description;
+            productObj.ExtraDescription = productDto.ExtraDescription;
             productObj.ItemOrder = productDto.ItemOrder;
             productObj.ItemType = productDto.ItemType;
             productObj.Limit = productDto.Limit;

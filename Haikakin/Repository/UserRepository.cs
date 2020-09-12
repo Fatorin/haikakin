@@ -237,6 +237,11 @@ namespace Haikakin.Repository
             return _db.Users.SingleOrDefault(x => x.UserId == id);
         }
 
+        public User GetUserByEmail(string userEmail)
+        {
+            return _db.Users.SingleOrDefault(x => x.Email == userEmail);
+        }
+
         public ICollection<User> GetUsers()
         {
             var list = _db.Users.OrderBy(u => u.UserId).ToList();

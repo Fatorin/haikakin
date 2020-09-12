@@ -18,6 +18,7 @@ namespace Haikakin.Models
         public int Stock { get; set; }
         public string ImageUrl { get; set; }
         public string Description { get; set; }
+        public string ExtraDescription { get; set; }
         public int Limit { get; set; }
         public DateTime LastUpdateTime { get; set; }
         public int ItemType { get; set; }

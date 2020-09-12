@@ -25,6 +25,8 @@ namespace Haikakin.Models.Dtos
         [Required]
         public string Description { get; set; }
         [Required]
+        public string ExtraDescription { get; set; }
+        [Required]
         public int Limit { get; set; }
         [Required]
         public int ItemType { get; set; }

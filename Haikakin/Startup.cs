@@ -24,6 +24,9 @@ using Newtonsoft.Json;
 using Quartz.Impl;
 using Haikakin.Models.OrderScheduler;
 using System.Collections.Generic;
+using Haikakin.Models;
+using static Haikakin.Models.User;
+using Haikakin.Extension;
 
 namespace Haikakin
 {

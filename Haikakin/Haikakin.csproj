@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20200817055456_InitDB.cs" />
-    <Compile Include="Migrations\20200817055456_InitDB.Designer.cs" />
+    <Compile Include="Migrations\20200905164230_InitDB.cs" />
+    <Compile Include="Migrations\20200905164230_InitDB.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 
@@ -62,6 +62,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="EmailTemplates\PasswordForget.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="EmailTemplates\Admin.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

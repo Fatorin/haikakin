@@ -196,7 +196,7 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "User,Admin")]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpPost("UpdateUserEmail")]
         public IActionResult UpdateUserEmail(UserEmailUpdateDto userDto)
         {
@@ -231,12 +231,10 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "相同的信箱" });
             }
 
-            user.EmailVerity = false;
-            user.Email = userDto.UserEmail;
-
-            if (!_userRepo.UpdateUser(user))
+            var emailUser = _userRepo.GetUserByEmail(userDto.UserEmail);
+            if (emailUser != null)
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{userDto.UserId}" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "已經有人使用過" });
             }
 
             //寄驗證信
@@ -247,7 +245,53 @@ namespace Haikakin.Controllers
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
             };
 
-            return NoContent();
+            return Ok();
+        }
+
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpPost("ForgetPassword")]
+        public IActionResult ForgetPassword(ForgetPasswordDto model)
+        {
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料異常" });
+            }
+
+            var user = _userRepo.GetUserByEmail(model.UserEmail);
+
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的使用者" });
+            }
+
+            var randomPasswordString = StringExtension.GenRandomPassword(10);
+
+            var passwordConvertToDatabase = Encrypt.HMACSHA256(randomPasswordString, _appSettings.UserSecret);
+
+            user.Password = passwordConvertToDatabase;
+
+            if (!_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = $"資料更新錯誤:{user.UserId}" });
+            }
+
+            //寄驗證信
+            var service = new SendMailService(_appSettings.MailgunAPIKey);
+            var mailModel = new EmailForgetPasswordModel()
+            {
+                UserEmail = user.Email,
+                UserName = user.Username,
+                UserPassword = randomPasswordString,
+            };
+            if (!service.ForgetPasswordMailBuild(mailModel))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
+            };
+
+            return Ok();
         }
 
 
@@ -477,19 +521,19 @@ namespace Haikakin.Controllers
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有此用戶" });
             }
 
-            if (user.EmailVerity == true)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱已驗證過" });
-            }
-
-            if (user.UserId != model.UserId || user.Email != model.UserEmail)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "用戶資訊不正確" });
-            }
-
             //如果是要驗證
             if (model.EmailVerityAction == EmailVerityModel.EmailVerityEnum.EmailVerity)
             {
+                if(user.Email != model.UserEmail)
+                {
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證信箱不正確" });
+                }
+
+                if (user.EmailVerity == true)
+                {
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱已驗證過" });
+                }
+
                 user.EmailVerity = true;
                 if (!_userRepo.UpdateUser(user))
                 {
@@ -502,11 +546,14 @@ namespace Haikakin.Controllers
             //如果是要修改
             if (model.EmailVerityAction == EmailVerityModel.EmailVerityEnum.EmailModify)
             {
-                if (user.Email != model.UserEmail)
+                var emailUser = _userRepo.GetUserByEmail(model.UserEmail);
+                if (emailUser != null)
                 {
-                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "信箱資訊不正確" });
+                    return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "已經有人使用過" });
                 }
+
                 user.EmailVerity = true;
+                user.Email = model.UserEmail;
                 if (!_userRepo.UpdateUser(user))
                 {
                     return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統修改信箱異常" });
@@ -515,7 +562,7 @@ namespace Haikakin.Controllers
                 return Ok();
             }
 
-            return BadRequest(new { message = "未知的錯誤" });
+            return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資訊異常" });
         }
 
         //Token新機制

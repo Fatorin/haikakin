@@ -63,6 +63,7 @@ namespace Haikakin.Migrations
                     stock = table.Column<int>(nullable: false),
                     image_url = table.Column<string>(nullable: true),
                     description = table.Column<string>(nullable: true),
+                    extra_description = table.Column<string>(nullable: true),
                     limit = table.Column<int>(nullable: false),
                     last_update_time = table.Column<DateTime>(nullable: false),
                     item_type = table.Column<int>(nullable: false),

@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200817055456_InitDB")]
+    [Migration("20200905164230_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -18,7 +18,7 @@ namespace Haikakin.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                .HasAnnotation("ProductVersion", "3.1.6")
+                .HasAnnotation("ProductVersion", "3.1.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             modelBuilder.Entity("Haikakin.Models.AnnouncementModel.Announcement", b =>
@@ -63,7 +63,7 @@ namespace Haikakin.Migrations
                     b.ToTable("announcements");
                 });
 
-            modelBuilder.Entity("Haikakin.Models.Order", b =>
+            modelBuilder.Entity("Haikakin.Models.OrderModel.Order", b =>
                 {
                     b.Property<int>("OrderId")
                         .ValueGeneratedOnAdd()
@@ -118,7 +118,7 @@ namespace Haikakin.Migrations
                     b.ToTable("orders");
                 });
 
-            modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
+            modelBuilder.Entity("Haikakin.Models.OrderModel.OrderInfo", b =>
                 {
                     b.Property<int>("OrderInfoId")
                         .ValueGeneratedOnAdd()
@@ -167,6 +167,10 @@ namespace Haikakin.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnName("description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExtraDescription")
+                        .HasColumnName("extra_description")
                         .HasColumnType("text");
 
                     b.Property<string>("ImageUrl")
@@ -354,9 +358,9 @@ namespace Haikakin.Migrations
                     b.ToTable("users");
                 });
 
-            modelBuilder.Entity("Haikakin.Models.OrderInfo", b =>
+            modelBuilder.Entity("Haikakin.Models.OrderModel.OrderInfo", b =>
                 {
-                    b.HasOne("Haikakin.Models.Order", null)
+                    b.HasOne("Haikakin.Models.OrderModel.Order", null)
                         .WithMany("OrderInfos")
                         .HasForeignKey("OrderId")
                         .HasConstraintName("fk_order_infos_orders_order_id")
@@ -366,7 +370,7 @@ namespace Haikakin.Migrations
 
             modelBuilder.Entity("Haikakin.Models.ProductInfo", b =>
                 {
-                    b.HasOne("Haikakin.Models.OrderInfo", "OrderInfo")
+                    b.HasOne("Haikakin.Models.OrderModel.OrderInfo", "OrderInfo")
                         .WithMany()
                         .HasForeignKey("OrderInfoId")
                         .HasConstraintName("fk_product_infos_order_infos_order_info_id");

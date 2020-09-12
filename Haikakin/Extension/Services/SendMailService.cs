@@ -60,6 +60,17 @@ namespace Haikakin.Extension.Services
             return SendMailActive(new EmailModel(model.UserEmail, title, body));
         }
 
+        public bool ForgetPasswordMailBuild(EmailForgetPasswordModel model)
+        {
+            var title = "Haikakin 重設密碼信";
+            string body = File.ReadAllText(Path.Combine("EmailTemplates/PasswordForget.html"));
+            body = body.Replace("#username", $"{model.UserName}");
+            body = body.Replace("#code", $"{model.UserPassword}");
+            body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
+
+            return SendMailActive(new EmailModel(model.UserEmail, title, body));
+        }
+
         public bool OrderFinishMailBuild(EmailOrderFinish model)
         {
             var title = $"Haikakin 訂單編號:{model.OrderId} 購買完成內容";

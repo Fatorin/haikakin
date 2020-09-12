@@ -220,6 +220,35 @@ namespace Haikakin.Controllers
             return Ok(list);
         }
 
+        [HttpPatch("UpdateUserBanStatus")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
+        public IActionResult UpdateUserBanStatus([FromBody] UserBanUpdateDto model)
+        {
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料不正確" });
+            }
+
+            var user = _userRepo.GetUser(model.UserId);
+
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有該使用者" });
+            }
+
+            user.CheckBan = model.CheckBan;
+            if (_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新使用者異常" });
+            }
+
+            return Ok();
+        }
+
         /// <summary>
         /// 查詢指定訂單，Admin限定
         /// </summary>
