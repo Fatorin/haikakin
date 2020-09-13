@@ -144,6 +144,7 @@ namespace Haikakin.Controllers
             productObj.ItemType = productDto.ItemType;
             productObj.Limit = productDto.Limit;
             productObj.Price = productDto.Price;
+            productObj.AgentFeePercent = productDto.AgentFeePercent;
 
             if (!_productRepo.UpdateProduct(productObj))
             {

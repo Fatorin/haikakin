@@ -59,6 +59,7 @@ namespace Haikakin.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     product_name = table.Column<string>(nullable: false),
                     price = table.Column<decimal>(nullable: false),
+                    agent_fee_percent = table.Column<decimal>(nullable: false),
                     can_buy = table.Column<bool>(nullable: false),
                     stock = table.Column<int>(nullable: false),
                     image_url = table.Column<string>(nullable: true),

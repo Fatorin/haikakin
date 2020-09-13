@@ -16,6 +16,8 @@ namespace Haikakin.Models.Dtos
         [Required]
         public decimal Price { get; set; }
         [Required]
+        public decimal AgentFeePercent { get; set; }
+        [Required]
         public bool CanBuy { get; set; }
 
         [DataType(DataType.Upload)]

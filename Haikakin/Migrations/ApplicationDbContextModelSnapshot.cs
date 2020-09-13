@@ -159,6 +159,10 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<decimal>("AgentFeePercent")
+                        .HasColumnName("agent_fee_percent")
+                        .HasColumnType("numeric");
+
                     b.Property<bool>("CanBuy")
                         .HasColumnName("can_buy")
                         .HasColumnType("boolean");

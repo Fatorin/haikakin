@@ -14,6 +14,7 @@ namespace Haikakin.Models
         public string ProductName { get; set; }
         [Required]
         public decimal Price { get; set; }
+        public decimal AgentFeePercent { get; set; }
         public bool CanBuy { get; set; }
         public int Stock { get; set; }
         public string ImageUrl { get; set; }

@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200905164230_InitDB")]
+    [Migration("20200913053500_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -160,6 +160,10 @@ namespace Haikakin.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'30001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<decimal>("AgentFeePercent")
+                        .HasColumnName("agent_fee_percent")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("CanBuy")
                         .HasColumnName("can_buy")

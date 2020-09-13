@@ -6,16 +6,11 @@ using System.Text;
 using Haikakin.Extension;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
-using Haikakin.Models.OrderScheduler;
 using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Quartz;
-using Twilio;
-using Twilio.Exceptions;
-using Twilio.Rest.Api.V2010.Account;
 
 namespace Haikakin.Controllers
 {
@@ -25,11 +20,13 @@ namespace Haikakin.Controllers
     public class SmsController : ControllerBase
     {
         private ISmsRepository _smsRepo;
+        private IUserRepository _userRepo;
         private readonly AppSettings _appSettings;
 
-        public SmsController(ISmsRepository smsRepo, IOptions<AppSettings> appSettings)
+        public SmsController(ISmsRepository smsRepo, IUserRepository userRepo, IOptions<AppSettings> appSettings)
         {
             _smsRepo = smsRepo;
+            _userRepo = userRepo;
             _appSettings = appSettings.Value;
         }
 
@@ -93,32 +90,72 @@ namespace Haikakin.Controllers
             return Ok();
         }
 
-
-        private bool SendTwiloSms(string randomString, string phoneNumber)
+        /// <summary>
+        /// 簡訊驗證手機
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("SmsVerityCodeForThirdParty")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult SmsVerityCodeForThirdParty([FromBody] UserPhoneNumberValid model)
         {
-            TwilioClient.Init(_appSettings.TwilioSmsAccountID, _appSettings.TwilioSmsAuthToken);
-
-            try
+            if (model == null)
             {
-                var msg = MessageResource.Create(
-                        body: $"Your Haikakin Web Services verification code is:{randomString}",
-                        from: new Twilio.Types.PhoneNumber($"+12058138320"),
-                        to: new Twilio.Types.PhoneNumber($"+{phoneNumber}")
-                );
-
-                //確認回傳有無錯誤
-                if (msg.ErrorCode != null)
-                {
-                    return false;
-                }
-            }
-            catch (TwilioException e)
-            {
-                Console.WriteLine(e);
-                return false;
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料接收異常" });
             }
 
-            return true;
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+
+            if (identity == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "身份驗證異常" });
+            }
+
+            var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
+
+            if (smsModel.IsUsed)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "手機號碼已註冊過" });
+            }
+
+            //檢查驗證碼對不對
+            if (smsModel.VerityCode != model.SmsCode)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼不正確" });
+            }
+
+            if (smsModel.VerityLimitTime < DateTime.UtcNow)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "驗證碼已過期" });
+            }
+
+            int userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+
+            var user = _userRepo.GetUser(userId);
+
+            if (user.LoginType != Models.User.LoginTypeEnum.Google)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "非第三方登入不可使用" });
+            }
+
+            //修改sms的資料
+            smsModel.IsUsed = true;
+            if (!_smsRepo.UpdateSmsModel(smsModel))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新驗證碼資訊異常" });
+            };
+
+            user.PhoneNumber = smsModel.PhoneNumber;
+            user.PhoneNumberVerity = true;
+
+            if (!_userRepo.UpdateUser(user))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "更新使用資料異常" });
+            }
+
+            return Ok();
         }
 
         private bool SendMitakeSms(string phoneNumber, string randomString, bool isTaiwanNumber)
