@@ -87,6 +87,13 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.OrdersController.GetOrderCVSCode(Haikakin.Models.Dtos.OrderCVSCodeQueryDto)">
+            <summary>
+            查序號
+            </summary>
+            <param name=""></param>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.ProductsController.GetProducts">
             <summary>
             獲得全部商品資訊

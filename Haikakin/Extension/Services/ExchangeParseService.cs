@@ -14,7 +14,7 @@ namespace Haikakin.Extension.Services
             try
             {
                 HtmlWeb webClient = new HtmlWeb(); //建立htmlweb
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
                 var uri = new Uri("https://www.apps1.asiapacific.hsbc.com/1/2/Misc/popup-tw/currency-calculator");
                 HtmlDocument doc = webClient.Load(uri); //載入網址資料
                 IEnumerable<HtmlNode> nodes = doc.DocumentNode.Descendants(0).Where(n => n.HasClass("ForRatesColumn02")); //抓取Xpath資料

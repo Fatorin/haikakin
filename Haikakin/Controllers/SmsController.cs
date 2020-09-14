@@ -115,6 +115,11 @@ namespace Haikakin.Controllers
 
             var smsModel = _smsRepo.GetSmsModel(model.PhoneNumber);
 
+            if (smsModel == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的驗證碼" });
+            }
+
             if (smsModel.IsUsed)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "手機號碼已註冊過" });

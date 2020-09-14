@@ -241,7 +241,7 @@ namespace Haikakin.Controllers
             }
 
             user.CheckBan = model.CheckBan;
-            if (_userRepo.UpdateUser(user))
+            if (!_userRepo.UpdateUser(user))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統更新使用者異常" });
             }

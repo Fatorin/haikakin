@@ -22,6 +22,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 using static Haikakin.Models.OrderModel.Order;
+using RestSharp;
 
 namespace Haikakin.Controllers
 {
@@ -86,6 +87,7 @@ namespace Haikakin.Controllers
         /// <returns></returns>
         [HttpGet("{orderId:int}", Name = "GetOrder")]
         [ProducesResponseType(200, Type = typeof(OrderResponse))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User")]
         public IActionResult GetOrder(int orderId)
@@ -170,6 +172,11 @@ namespace Haikakin.Controllers
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
             }
+
+            if (orderDtos.Length <= 0)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
+            }
             //檢查用戶是否存在
             var user = _userRepo.GetUser(userId);
             if (user == null)
@@ -222,6 +229,12 @@ namespace Haikakin.Controllers
                 price += product.Price * dto.OrderCount;
                 itemsNameList.Add($"{product.ProductName} x {dto.OrderCount}");
             }
+
+            if (price <= 0)
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "金額計算異常，下單失敗" });
+            }
+
             //用爬蟲抓匯率
             decimal exchange = ExchangeParseService.GetExchange();
             //產生訂單物件
@@ -526,6 +539,89 @@ namespace Haikakin.Controllers
             }
 
             return Ok(objDto);
+        }
+
+        /// <summary>
+        /// 查序號
+        /// </summary>
+        /// <param name=""></param>
+        /// <returns></returns>
+        [HttpPost("GetOrderCVSCode")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult GetOrderCVSCode([FromBody] OrderCVSCodeQueryDto model)
+        {
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求參數異常" });
+            }
+
+            var order = _orderRepo.GetOrder(model.OrderId);
+            if (order == null)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
+            }
+
+            GetCVSData(order, out bool result, out string cvsCode);
+
+            if (!result)
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "找不到對應的序號" });
+            }
+
+            return Ok(cvsCode);
+        }
+
+        private void GetCVSData(Order order, out bool result, out string cvsCode)
+        {
+            string merchantID = _appSettings.NewebPayMerchantID;
+            string merchantOrderNo = order.OrderThirdPaySerial;
+            int amt = int.Parse($"{order.OrderAmount}");
+
+            string checkValue = CryptoUtil.EncryptSHA256(
+                $"IV={_appSettings.NewebPayHashIV}&" +
+                $"Amt={amt}&" +
+                $"MerchantID={merchantID}&" +
+                $"MerchantOrderNo={merchantOrderNo}&" +
+                $"Key={_appSettings.NewebPayHashKey}");
+
+            RestClient client = new RestClient();
+            client.BaseUrl = new Uri("https://ccore.newebpay.com/API/QueryTradeInfo");
+            RestRequest request = new RestRequest();
+            request.AddParameter("MerchantID", merchantID);
+            request.AddParameter("Version", "1.2");
+            request.AddParameter("RespondType", "String");
+            request.AddParameter("CheckValue", checkValue);
+            request.AddParameter("TimeStamp", $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}");
+            request.AddParameter("MerchantOrderNo", merchantOrderNo);
+            request.AddParameter("Amt", amt);
+            request.Method = Method.POST;
+            var response = client.Execute(request);
+
+            NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(response.Content);
+            NewebPayQueryResp convertModel = LambdaUtil.DictionaryToObject<NewebPayQueryResp>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
+
+            string checkValueResp = CryptoUtil.EncryptSHA256(
+                $"HashIV={_appSettings.NewebPayHashIV}&" +
+                $"Amt={convertModel.Amt}&" +
+                $"MerchantID={merchantID}&" +
+                $"MerchantOrderNo={merchantOrderNo}&" +
+                $"TradeNo={convertModel.TradeNo}&" +
+                $"HashKey={_appSettings.NewebPayHashKey}");
+
+            if (convertModel.CheckCode != checkValueResp)
+            {
+                result = false;
+                cvsCode = "";
+            }
+            else
+            {
+                result = true;
+                cvsCode = convertModel.PayInfo;
+            };
         }
 
         private NewebPayBase CreateNewbPayData(string ordernumber, string orderItems, int amount, string userEmail, string payType)
