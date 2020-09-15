@@ -8,5 +8,6 @@ namespace Haikakin.Extension
     static public class GlobalSetting
     {
         public static bool OrderSwitch { get; set; } = true;
+        public static decimal OrderFee { get; set; } = 28;
     }
 }

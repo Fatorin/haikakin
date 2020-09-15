@@ -94,6 +94,10 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_last_update_time")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<DateTime?>("OrderPayLimitTime")
+                        .HasColumnName("order_pay_limit_time")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<string>("OrderPaySerial")
                         .HasColumnName("order_pay_serial")
                         .HasColumnType("text");

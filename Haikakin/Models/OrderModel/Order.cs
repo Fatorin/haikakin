@@ -25,6 +25,7 @@ namespace Haikakin.Models.OrderModel
         public string OrderThirdPaySerial { get; set; }
         public string OrderCVSCode { get; set; }
         public string OrderFee { get; set; }
+        public DateTime? OrderPayLimitTime { get; set; }
         public decimal Exchange { get; set; }
         [Required]
         [ForeignKey("UserId")]

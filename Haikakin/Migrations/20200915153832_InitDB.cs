@@ -43,6 +43,7 @@ namespace Haikakin.Migrations
                     order_third_pay_serial = table.Column<string>(nullable: true),
                     order_cvs_code = table.Column<string>(nullable: true),
                     order_fee = table.Column<string>(nullable: true),
+                    order_pay_limit_time = table.Column<DateTime>(nullable: true),
                     exchange = table.Column<decimal>(nullable: false),
                     user_id = table.Column<int>(nullable: false)
                 },

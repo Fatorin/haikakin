@@ -295,18 +295,22 @@ namespace Haikakin.Controllers
             }
 
             order.OrderCVSCode = convertModel.CodeNo;
+            order.OrderPayLimitTime = convertModel.ExpireDate;
+            order.OrderThirdPaySerial = convertModel.TradeNo;
+            order.OrderStatus = OrderStatusType.HasGotCVSCode;
             if (!_orderRepo.UpdateOrder(order))
             {
                 _logger.LogInformation("取號後更新訂單異常");
                 return BadRequest("取號後訂單異常");
             }
+            _logger.LogInformation("成功接收序號並更新");
 
             //關閉前一個定時器
             _orderJob.CancelJob(_scheduler, order.OrderId);
             //定時器開啟，時間內沒繳完費自動取消
             _orderJob.StartJob(_scheduler, order.OrderId);
 
-            return Redirect("https://www.haikakin.com/account/order");
+            return Redirect($"https://www.haikakin.com/account/order/{order.OrderId}");
         }
 
         /// <summary>
@@ -494,7 +498,52 @@ namespace Haikakin.Controllers
 
         private void SendReceipt()
         {
+            /*string merchantID = _appSettings.NewebPayMerchantID;
+            string merchantOrderNo = order.OrderPaySerial;
+            int amt = int.Parse($"{order.OrderAmount}");
 
+            string checkValue = CryptoUtil.EncryptSHA256(
+                $"IV={_appSettings.NewebPayHashIV}&" +
+                $"Amt={amt}&" +
+                $"MerchantID={merchantID}&" +
+                $"MerchantOrderNo={merchantOrderNo}&" +
+                $"Key={_appSettings.NewebPayHashKey}");
+
+            RestClient client = new RestClient();
+            client.BaseUrl = new Uri("https://ccore.newebpay.com/API/QueryTradeInfo");
+            RestRequest request = new RestRequest();
+            request.AddParameter("MerchantID", merchantID);
+            request.AddParameter("Version", "1.2");
+            request.AddParameter("RespondType", "String");
+            request.AddParameter("CheckValue", checkValue);
+            request.AddParameter("TimeStamp", $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}");
+            request.AddParameter("MerchantOrderNo", merchantOrderNo);
+            request.AddParameter("Amt", amt);
+            request.Method = Method.POST;
+            var response = client.Execute(request);
+
+            NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(response.Content);
+            NewebPayQueryResp convertModel = LambdaUtil.DictionaryToObject<NewebPayQueryResp>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
+
+            string checkValueResp = CryptoUtil.EncryptSHA256(
+                $"HashIV={_appSettings.NewebPayHashIV}&" +
+                $"Amt={convertModel.Amt}&" +
+                $"MerchantID={merchantID}&" +
+                $"MerchantOrderNo={merchantOrderNo}&" +
+                $"TradeNo={convertModel.TradeNo}&" +
+                $"HashKey={_appSettings.NewebPayHashKey}");
+
+            if (convertModel.CheckCode != checkValueResp)
+            {
+                result = false;
+                cvsCode = "";
+
+            }
+            else
+            {
+                result = true;
+                cvsCode = convertModel.PayInfo;
+            };*/
         }
     }
 }

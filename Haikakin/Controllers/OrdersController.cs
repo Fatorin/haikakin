@@ -126,31 +126,21 @@ namespace Haikakin.Controllers
                 OrderCreateTime = obj.OrderCreateTime,
                 OrderLastUpdateTime = obj.OrderLastUpdateTime,
                 OrderStatus = obj.OrderStatus,
+                OrderAmount = decimal.ToInt32(obj.OrderAmount),
                 OrderPayWay = obj.OrderPayWay,
                 OrderPaySerial = obj.OrderPaySerial,
-                OrderAmount = decimal.ToInt32(obj.OrderAmount),
-                OrderInfos = orderInfoRespList,
                 OrderCVSCode = obj.OrderCVSCode,
+                OrderFee = obj.OrderFee,
+                OrderPayLimitTime = obj.OrderPayLimitTime,
+                OrderThirdPaySerial = obj.OrderThirdPaySerial,
+                OrderInfos = orderInfoRespList,
                 UserId = user.UserId,
+                UserIPAddress = user.IPAddress,
                 UserEmail = user.Email,
                 UserName = user.Username
             };
 
             return Ok(orderRespModel);
-        }
-
-        [HttpGet("TestOrder")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NewebPayBase))]
-        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
-        [Authorize(Roles = "User,Admin")]
-        public IActionResult TestOrder()
-        {
-            if (!GlobalSetting.OrderSwitch)
-            {
-                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統禁止下單" });
-            }
-
-            return Ok();
         }
 
         /// <summary>
@@ -205,11 +195,11 @@ namespace Haikakin.Controllers
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "此用戶已被黑名單" });
             }
             //檢查訂單未付款的項目，過多就擋住
-            int notPayCount = _orderRepo.GetOrdersInUser(user.UserId).Where(o => o.OrderStatus == OrderStatusType.NotGetCVSCode).Count();
+            /*int notPayCount = _orderRepo.GetOrdersInUser(user.UserId).Where(o => o.OrderStatus == OrderStatusType.NotGetCVSCode).Count();
             if (notPayCount >= 3)
             {
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "過多訂單未付款" });
-            }
+            }*/
             //依序檢查商品剩餘數量並計算總價錢
             foreach (OrderCreateDto dto in orderDtos)
             {
@@ -262,7 +252,7 @@ namespace Haikakin.Controllers
                 OrderPayWay = OrderPayWayEnum.CVSBarCode,
                 OrderStatus = OrderStatusType.NotGetCVSCode,
                 OrderLastUpdateTime = DateTime.UtcNow,
-                OrderFee = "28",
+                OrderFee = $"{GlobalSetting.OrderFee}",
                 Exchange = exchange,
                 UserId = userId,
             };
@@ -282,9 +272,9 @@ namespace Haikakin.Controllers
             }
 
             //定時器開啟，一個小時內沒取號視同棄單
-            _orderJob.StartJob(_scheduler, orderObj.OrderId);
+            _orderJob.StartJob(_scheduler, orderCreatedObj.OrderId);
 
-            return StatusCode(201);
+            return StatusCode(201, orderCreatedObj.OrderId);
         }
 
         /// <summary>

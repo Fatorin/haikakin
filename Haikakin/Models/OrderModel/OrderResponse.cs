@@ -15,7 +15,10 @@ namespace Haikakin.Models.OrderModel
         public int OrderAmount { get; set; }
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
+        public string OrderThirdPaySerial { get; set; }
         public string OrderCVSCode { get; set; }
+        public string OrderFee { get; set; }
+        public DateTime? OrderPayLimitTime { get; set; }
         public List<OrderInfoResponse> OrderInfos { get; set; }
         public int UserId { get; set; }
         public string UserName { get; set; }
