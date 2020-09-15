@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
-using System.Web;
 using AutoMapper;
+using DocumentFormat.OpenXml.Office2010.CustomUI;
+using Haikakin.Extension;
 using Haikakin.Extension.Services;
-using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
-using Haikakin.Models.MailModel;
 using Haikakin.Models.NewebPay;
 using Haikakin.Models.OrderModel;
 using Haikakin.Models.OrderScheduler;
@@ -22,14 +19,13 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Quartz;
 using static Haikakin.Models.OrderModel.Order;
-using RestSharp;
 
 namespace Haikakin.Controllers
 {
     [Authorize]
     [Route("api/v{version:apiVersion}/Orders")]
     [ApiController]
-    public class OrdersController : ControllerBase
+    public partial class OrdersController : ControllerBase
     {
         private IUserRepository _userRepo;
         private IOrderRepository _orderRepo;
@@ -99,13 +95,11 @@ namespace Haikakin.Controllers
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "訂單不存在" });
             }
 
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            if (identity == null)
+            HttpContextGetUserId(out bool result, out int userId);
+            if (!result)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
             }
-
-            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
 
             //檢查用戶是否存在
             var user = _userRepo.GetUser(obj.UserId);
@@ -123,7 +117,6 @@ namespace Haikakin.Controllers
             foreach (var orderInfo in obj.OrderInfos)
             {
                 var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
-                var keys = _productInfoRepo.GetProductInfosByOrderInfoId(orderId);
                 orderInfoRespList.Add(new OrderInfoResponse(productName, orderInfo.Count, null));
             }
 
@@ -137,12 +130,27 @@ namespace Haikakin.Controllers
                 OrderPaySerial = obj.OrderPaySerial,
                 OrderAmount = decimal.ToInt32(obj.OrderAmount),
                 OrderInfos = orderInfoRespList,
+                OrderCVSCode = obj.OrderCVSCode,
                 UserId = user.UserId,
                 UserEmail = user.Email,
                 UserName = user.Username
             };
 
             return Ok(orderRespModel);
+        }
+
+        [HttpGet("TestOrder")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NewebPayBase))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "User,Admin")]
+        public IActionResult TestOrder()
+        {
+            if (!GlobalSetting.OrderSwitch)
+            {
+                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統禁止下單" });
+            }
+
+            return Ok();
         }
 
         /// <summary>
@@ -159,14 +167,17 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "User,Admin")]
         public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos)
         {
+            if (!GlobalSetting.OrderSwitch)
+            {
+                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統禁止下單" });
+            }
             //設定初值與使用者Token確認
             decimal price = 0;
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-            if (identity == null)
+            HttpContextGetUserId(out bool result, out int userId);
+            if (!result)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
             }
-            var userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             //沒收到資料代表請求失敗
             if (orderDtos == null)
             {
@@ -193,9 +204,13 @@ namespace Haikakin.Controllers
             {
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "此用戶已被黑名單" });
             }
+            //檢查訂單未付款的項目，過多就擋住
+            int notPayCount = _orderRepo.GetOrdersInUser(user.UserId).Where(o => o.OrderStatus == OrderStatusType.NotGetCVSCode).Count();
+            if (notPayCount >= 3)
+            {
+                return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "過多訂單未付款" });
+            }
             //依序檢查商品剩餘數量並計算總價錢
-            //紀錄商品名稱
-            var itemsNameList = new List<string>();
             foreach (OrderCreateDto dto in orderDtos)
             {
                 //檢查是否有該商品
@@ -226,8 +241,10 @@ namespace Haikakin.Controllers
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "庫存不足" });
                 }
 
+                //原始價格
                 price += product.Price * dto.OrderCount;
-                itemsNameList.Add($"{product.ProductName} x {dto.OrderCount}");
+                //代購費用抽成
+                price += product.Price * dto.OrderCount * product.AgentFeePercent / 100;
             }
 
             if (price <= 0)
@@ -243,8 +260,9 @@ namespace Haikakin.Controllers
                 OrderCreateTime = DateTime.UtcNow,
                 OrderAmount = price,
                 OrderPayWay = OrderPayWayEnum.CVSBarCode,
-                OrderStatus = OrderStatusType.NonPayment,
+                OrderStatus = OrderStatusType.NotGetCVSCode,
                 OrderLastUpdateTime = DateTime.UtcNow,
+                OrderFee = "28",
                 Exchange = exchange,
                 UserId = userId,
             };
@@ -263,156 +281,10 @@ namespace Haikakin.Controllers
                 _orderInfoRepo.CreateOrderInfo(orderInfo);
             }
 
-            //產生藍新訂單
-            var newebPayNo = $"N{DateTime.Now.ToString("yyyyMMddHHmm")}{orderCreatedObj.OrderId.ToString().Substring(4)}";
-            var items = new StringBuilder();
-            foreach (var item in itemsNameList)
-            {
-                items.AppendLine(item);
-            }
-            var model = CreateNewbPayData(newebPayNo, items.ToString(), decimal.ToInt32(price), user.Email, "CVS");
-            //更新訂單的訂單編號
-            orderCreatedObj.OrderPaySerial = newebPayNo;
-            _orderRepo.UpdateOrder(orderCreatedObj);
-            //定時器開啟，一個小時內沒繳完費自動取消
+            //定時器開啟，一個小時內沒取號視同棄單
             _orderJob.StartJob(_scheduler, orderObj.OrderId);
 
-            return StatusCode(201, model);
-        }
-
-        /// <summary>
-        /// 結束指定訂單，用於第三方的回傳，所以不限定使用者
-        /// </summary>
-        /// <param name=""></param>
-        /// <returns></returns>
-        [HttpPost("FinishOrder")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
-        [AllowAnonymous]
-        public IActionResult FinishOrder([FromForm] NewebPayBaseResp newebPayModel)
-        {
-            if (newebPayModel == null)
-            {
-                _logger.LogInformation("藍新資料格式異常");
-                return BadRequest("資料請求異常");
-            }
-
-            if (newebPayModel.Status != "SUCCESS")
-            {
-                _logger.LogInformation($"交易失敗，錯誤代碼：{newebPayModel.Status}");
-            }
-
-            //檢查資料
-            if (newebPayModel.MerchantID != _appSettings.NewebPayMerchantID)
-            {
-                _logger.LogInformation("非本商店訂單");
-                return BadRequest("非本商店訂單");
-            }
-
-            if (newebPayModel.TradeSha != CryptoUtil.EncryptSHA256($"HashKey={_appSettings.NewebPayHashKey}&{newebPayModel.TradeInfo}&HashIV={_appSettings.NewebPayHashIV}"))
-            {
-                _logger.LogInformation("非本商店訂單");
-                return BadRequest("非本商店訂單");
-            }
-
-            var decryptTradeInfo = CryptoUtil.DecryptAESHex(newebPayModel.TradeInfo, _appSettings.NewebPayHashKey, _appSettings.NewebPayHashIV);
-
-            // 取得回傳參數(ex:key1=value1&key2=value2),儲存為NameValueCollection
-            NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(decryptTradeInfo);
-            NewebPayResponse convertModel = LambdaUtil.DictionaryToObject<NewebPayResponse>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
-
-            //依照特店交易編號回傳資料
-            var order = _orderRepo.GetOrdersInPaySerial(convertModel.MerchantOrderNo);
-
-            if (order == null)
-            {
-                _logger.LogInformation($"查無此訂單:{convertModel.MerchantOrderNo}");
-                return BadRequest("查無此訂單");
-            }
-
-            if (order.OrderStatus == OrderStatusType.Over)
-            {
-                _logger.LogInformation("特店訂單已結束");
-                return BadRequest("訂單已結束");
-            }
-
-            if (order.OrderStatus == OrderStatusType.Cancel)
-            {
-                _logger.LogInformation("特店訂單已取消");
-                return BadRequest("特店訂單已取消");
-            }
-
-            if (convertModel.Amt != order.OrderAmount)
-            {
-                _logger.LogInformation("金額不相符");
-                _logger.LogInformation($"convertModel.Amt={convertModel.Amt},order.OrderPrice={order.OrderAmount}");
-                return BadRequest("金額不相符");
-            }
-
-            //獲得對應訂單並修改
-            var user = _userRepo.GetUser(order.UserId);
-
-            //orderInfo不用更新
-            var emailOrderInfoList = new List<EmailOrderInfo>();
-            foreach (OrderInfo orderInfo in order.OrderInfos)
-            {
-                //商品名稱與數量
-                var emailInfo = new EmailOrderInfo();
-                var productName = _productRepo.GetProduct(orderInfo.ProductId).ProductName;
-                var orderCount = orderInfo.Count;
-
-                emailInfo.OrderName = $"{productName} x{orderCount}";
-
-                var orderContext = new StringBuilder();
-
-                var productInfos = _productInfoRepo
-                    .GetProductInfos()
-                    .Where(o => o.OrderInfoId == orderInfo.OrderInfoId)
-                    .Where(o => o.ProductId == orderInfo.ProductId)
-                    .ToList();
-
-                foreach (ProductInfo productInfo in productInfos)
-                {
-                    //訂單改成鎖定
-                    productInfo.ProductStatus = ProductInfo.ProductStatusEnum.Used;
-                    if (!_productInfoRepo.UpdateProductInfo(productInfo))
-                    {
-                        //系統更新資料異常
-                        _logger.LogInformation("特店系統異常_ProductInfo更新異常");
-                        return BadRequest("特店系統異常");
-                    };
-                    var realKey = CryptoUtil.DecryptAESHex(productInfo.Serial, _appSettings.SerialHashKey, _appSettings.SerialHashIV);
-                    orderContext.Append($"{realKey}<br>");
-                }
-
-                emailInfo.OrderContext = orderContext.ToString();
-                emailOrderInfoList.Add(emailInfo);
-            }
-
-            order.OrderStatus = OrderStatusType.Over;
-            order.OrderLastUpdateTime = DateTime.UtcNow;
-            //要將綠界編號儲存
-            order.OrderThirdPaySerial = convertModel.TradeNo;
-            if (!_orderRepo.UpdateOrder(order))
-            {
-                //$"更新資料錯誤，訂單編號{order.OrderId}"
-                _logger.LogInformation("特店系統異常_Order更新異常");
-                return BadRequest("特店系統異常");
-            }
-
-            //沒問題就發送序號
-            SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
-            EmailOrderFinish mailModel = new EmailOrderFinish { UserName = user.Username, Email = user.Email, OrderId = $"{order.OrderId}", OrderItemList = emailOrderInfoList };
-            if (!service.OrderFinishMailBuild(mailModel))
-            {
-                //信箱系統掛掉
-                _logger.LogInformation("序號發送異常");
-                return BadRequest("特店系統異常");
-            };
-
-            return Ok();
+            return StatusCode(201);
         }
 
         /// <summary>
@@ -461,9 +333,11 @@ namespace Haikakin.Controllers
                     productInfo.OrderInfoId = null;
                     productInfo.LastUpdateTime = DateTime.UtcNow;
                     productInfo.ProductStatus = ProductInfo.ProductStatusEnum.NotUse;
-                    //更新庫存寫在UpdateProductInfo裡面
                     _productInfoRepo.UpdateProductInfo(productInfo);
                 }
+
+                //更新庫存
+                _productRepo.UpdateProduct(_productRepo.GetProduct(orderInfo.ProductId));
             }
 
             //計算棄單次數，如果超過就吃BAN
@@ -489,16 +363,13 @@ namespace Haikakin.Controllers
         [Authorize(Roles = "User,Admin")]
         public IActionResult GetOrderInUser()
         {
-            var identity = HttpContext.User.Identity as ClaimsIdentity;
-
-            if (identity == null)
+            HttpContextGetUserId(out bool result, out int userId);
+            if (!result)
             {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者身份異常" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
             }
 
-            var userId = identity.FindFirst(ClaimTypes.Name).Value;
-
-            var objList = _orderRepo.GetOrdersInUser(int.Parse(userId));
+            var objList = _orderRepo.GetOrdersInUser(userId);
 
             if (objList == null)
             {
@@ -542,184 +413,35 @@ namespace Haikakin.Controllers
         }
 
         /// <summary>
-        /// 查序號
+        /// 開啟或關閉下單功能
         /// </summary>
-        /// <param name=""></param>
+        /// <param name="trigger"></param>
         /// <returns></returns>
-        [HttpPost("GetOrderCVSCode")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
-        [Authorize(Roles = "User,Admin")]
-        public IActionResult GetOrderCVSCode([FromBody] OrderCVSCodeQueryDto model)
+        [HttpGet("SwitchOrder")]
+        [ProducesResponseType(200, Type = typeof(List<OrderDto>))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [Authorize(Roles = "Admin")]
+        public IActionResult SwitchOrder(bool trigger)
         {
-            if (model == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求參數異常" });
-            }
-
-            var order = _orderRepo.GetOrder(model.OrderId);
-            if (order == null)
-            {
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "查無此訂單" });
-            }
-
-            GetCVSData(order, out bool result, out string cvsCode);
-
-            if (!result)
-            {
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "找不到對應的序號" });
-            }
-
-            return Ok(cvsCode);
+            GlobalSetting.OrderSwitch = trigger;
+            _logger.LogInformation($"下單功能已調整為:{trigger}");
+            return Ok();
         }
 
-        private void GetCVSData(Order order, out bool result, out string cvsCode)
+        private void HttpContextGetUserId(out bool result, out int userId)
         {
-            string merchantID = _appSettings.NewebPayMerchantID;
-            string merchantOrderNo = order.OrderThirdPaySerial;
-            int amt = int.Parse($"{order.OrderAmount}");
-
-            string checkValue = CryptoUtil.EncryptSHA256(
-                $"IV={_appSettings.NewebPayHashIV}&" +
-                $"Amt={amt}&" +
-                $"MerchantID={merchantID}&" +
-                $"MerchantOrderNo={merchantOrderNo}&" +
-                $"Key={_appSettings.NewebPayHashKey}");
-
-            RestClient client = new RestClient();
-            client.BaseUrl = new Uri("https://ccore.newebpay.com/API/QueryTradeInfo");
-            RestRequest request = new RestRequest();
-            request.AddParameter("MerchantID", merchantID);
-            request.AddParameter("Version", "1.2");
-            request.AddParameter("RespondType", "String");
-            request.AddParameter("CheckValue", checkValue);
-            request.AddParameter("TimeStamp", $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}");
-            request.AddParameter("MerchantOrderNo", merchantOrderNo);
-            request.AddParameter("Amt", amt);
-            request.Method = Method.POST;
-            var response = client.Execute(request);
-
-            NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(response.Content);
-            NewebPayQueryResp convertModel = LambdaUtil.DictionaryToObject<NewebPayQueryResp>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
-
-            string checkValueResp = CryptoUtil.EncryptSHA256(
-                $"HashIV={_appSettings.NewebPayHashIV}&" +
-                $"Amt={convertModel.Amt}&" +
-                $"MerchantID={merchantID}&" +
-                $"MerchantOrderNo={merchantOrderNo}&" +
-                $"TradeNo={convertModel.TradeNo}&" +
-                $"HashKey={_appSettings.NewebPayHashKey}");
-
-            if (convertModel.CheckCode != checkValueResp)
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            if (identity == null)
             {
                 result = false;
-                cvsCode = "";
+                userId = 0;
             }
             else
             {
                 result = true;
-                cvsCode = convertModel.PayInfo;
-            };
-        }
-
-        private NewebPayBase CreateNewbPayData(string ordernumber, string orderItems, int amount, string userEmail, string payType)
-        {
-            // 目前時間轉換 +08:00, 防止傳入時間或Server時間時區不同造成錯誤
-            DateTimeOffset taipeiStandardTimeOffset = DateTimeOffset.Now.ToOffset(new TimeSpan(8, 0, 0));
-            // 預設參數
-            var version = "1.5";
-            var returnURL = "https://www.haikakin.com/account/order";
-            var notifyURL = "https://www.haikakin.com/api/v1/Orders/FinishOrder";
-
-            NewebPayRequest newebPayRequest = new NewebPayRequest()
-            {
-                // * 商店代號
-                MerchantID = _appSettings.NewebPayMerchantID,
-                // * 回傳格式
-                RespondType = "String",
-                // * TimeStamp
-                TimeStamp = taipeiStandardTimeOffset.ToUnixTimeSeconds().ToString(),
-                // * 串接程式版本
-                Version = version,
-                // * 商店訂單編號
-                MerchantOrderNo = ordernumber,
-                // * 訂單金額
-                Amt = amount,
-                // * 商品資訊
-                ItemDesc = orderItems,
-                // 繳費有效期限(適用於非即時交易)
-                ExpireDate = null,
-                // 支付完成 返回商店網址
-                ReturnURL = null,
-                // 支付通知網址
-                NotifyURL = notifyURL,
-                // 商店取號網址
-                CustomerURL = null,
-                // 支付取消 返回商店網址
-                ClientBackURL = returnURL,
-                // * 付款人電子信箱
-                Email = userEmail,
-                // 付款人電子信箱 是否開放修改(1=可修改 0=不可修改)
-                EmailModify = 0,
-                // 商店備註
-                OrderComment = null,
-                // 信用卡 一次付清啟用(1=啟用、0或者未有此參數=不啟用)
-                CREDIT = null,
-                // WEBATM啟用(1=啟用、0或者未有此參數，即代表不開啟)
-                WEBATM = null,
-                // ATM 轉帳啟用(1=啟用、0或者未有此參數，即代表不開啟)
-                VACC = null,
-                // 超商代碼繳費啟用(1=啟用、0或者未有此參數，即代表不開啟)(當該筆訂單金額小於 30 元或超過 2 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。)
-                CVS = null,
-                // 超商條碼繳費啟用(1=啟用、0或者未有此參數，即代表不開啟)(當該筆訂單金額小於 20 元或超過 4 萬元時，即使此參數設定為啟用，MPG 付款頁面仍不會顯示此支付方式選項。)
-                BARCODE = null
-            };
-
-            if (string.Equals(payType, "CREDIT"))
-            {
-                newebPayRequest.CREDIT = 1;
+                userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
             }
-            else if (string.Equals(payType, "WEBATM"))
-            {
-                newebPayRequest.WEBATM = 1;
-            }
-            else if (string.Equals(payType, "VACC"))
-            {
-                // 設定繳費截止日期
-                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddDays(1).ToString("yyyyMMdd");
-                newebPayRequest.VACC = 1;
-            }
-            else if (string.Equals(payType, "CVS"))
-            {
-                // 設定繳費截止日期
-                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddHours(1).ToString("yyyyMMdd");
-                newebPayRequest.CVS = 1;
-            }
-            else if (string.Equals(payType, "BARCODE"))
-            {
-                // 設定繳費截止日期
-                newebPayRequest.ExpireDate = taipeiStandardTimeOffset.AddHours(1).ToString("yyyyMMdd");
-                newebPayRequest.BARCODE = 1;
-            }
-
-            var inputModel = new NewebPayBase
-            {
-                MerchantID = _appSettings.NewebPayMerchantID,
-                Version = version
-            };
-
-            // 將model 轉換為List<KeyValuePair<string, string>>, null值不轉
-            List<KeyValuePair<string, string>> tradeData = LambdaUtil.ModelToKeyValuePairList<NewebPayRequest>(newebPayRequest);
-            // 將List<KeyValuePair<string, string>> 轉換為 key1=Value1&key2=Value2&key3=Value3...
-            var tradeQueryPara = string.Join("&", tradeData.Select(x => $"{x.Key}={x.Value}"));
-            // AES 加密
-            inputModel.TradeInfo = CryptoUtil.EncryptAESHex(tradeQueryPara, _appSettings.NewebPayHashKey, _appSettings.NewebPayHashIV);
-            // SHA256 加密
-            inputModel.TradeSha = CryptoUtil.EncryptSHA256($"HashKey={_appSettings.NewebPayHashKey}&{inputModel.TradeInfo}&HashIV={_appSettings.NewebPayHashIV}");
-
-            return inputModel;
         }
     }
 }

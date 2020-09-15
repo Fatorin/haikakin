@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200913053500_InitDB")]
+    [Migration("20200914150957_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -79,6 +79,10 @@ namespace Haikakin.Migrations
                     b.Property<decimal>("OrderAmount")
                         .HasColumnName("order_amount")
                         .HasColumnType("numeric");
+
+                    b.Property<string>("OrderCVSCode")
+                        .HasColumnName("order_cvs_code")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("OrderCreateTime")
                         .HasColumnName("order_create_time")

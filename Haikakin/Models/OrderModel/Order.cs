@@ -13,7 +13,7 @@ namespace Haikakin.Models.OrderModel
         public int OrderId { get; set; }
         public DateTime OrderCreateTime { get; set; }
         public DateTime OrderLastUpdateTime { get; set; }
-        public enum OrderStatusType { NonPayment, AlreadyPaid, Over, Cancel }
+        public enum OrderStatusType { NotGetCVSCode, HasGotCVSCode, AlreadyPaid, Over, Cancel }
         [Required]
         public OrderStatusType OrderStatus { get; set; }
         [Required]
@@ -23,6 +23,7 @@ namespace Haikakin.Models.OrderModel
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
         public string OrderThirdPaySerial { get; set; }
+        public string OrderCVSCode { get; set; }
         public string OrderFee { get; set; }
         public decimal Exchange { get; set; }
         [Required]

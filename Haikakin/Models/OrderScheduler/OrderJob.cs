@@ -21,8 +21,11 @@ namespace Haikakin.Models.OrderScheduler
             _logger = logger;
             _serviceProvider = serviceProvider;
         }
+
         public Task Execute(IJobExecutionContext context)
         {
+            if (context == null) return Task.CompletedTask;
+
             var orderId = context.JobDetail.JobDataMap.GetInt("orderId");
 
             using (var scope = _serviceProvider.CreateScope())
@@ -30,10 +33,9 @@ namespace Haikakin.Models.OrderScheduler
                 var _userRepo = scope.ServiceProvider.GetRequiredService<IUserRepository>();
                 var _orderRepo = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
                 var _productInfoRepo = scope.ServiceProvider.GetRequiredService<IProductInfoRepository>();
-                // do something with context
+                var _productRepo = scope.ServiceProvider.GetRequiredService<IProductRepository>();
 
                 var orderObj = _orderRepo.GetOrder(orderId);
-                _logger.LogInformation($"orderId={orderId}");
                 if (orderObj == null)
                 {
                     return Task.CompletedTask;
@@ -66,9 +68,11 @@ namespace Haikakin.Models.OrderScheduler
                         productInfo.OrderInfoId = null;
                         productInfo.LastUpdateTime = DateTime.UtcNow;
                         productInfo.ProductStatus = ProductInfo.ProductStatusEnum.NotUse;
-                        //更新庫存寫在UpdateProductInfo裡面
                         _productInfoRepo.UpdateProductInfo(productInfo);
                     }
+
+                    //更新庫存
+                    _productRepo.UpdateProduct(_productRepo.GetProduct(orderInfo.ProductId));
                 }
 
                 //計算棄單次數，如果超過就吃BAN
@@ -95,10 +99,18 @@ namespace Haikakin.Models.OrderScheduler
             .Build();
             var trigger = TriggerBuilder
             .Create()
-            .StartAt(DateTimeOffset.Now.AddMinutes(70))
+            //.StartAt(DateTimeOffset.Now.AddMinutes(2))
+            .StartAt(DateTimeOffset.Now.AddMinutes(60))
             .Build();
             //call the scheduler.ScheduleJob
+            _logger.LogInformation("開始計時");
             return scheduler.ScheduleJob(jobDetails, trigger);
+        }
+
+        public Task CancelJob(IScheduler scheduler, int orderId)
+        {
+            _logger.LogInformation("刪除計時");
+            return scheduler.DeleteJob(new JobKey($"OrderJob{orderId}"));
         }
     }
 }

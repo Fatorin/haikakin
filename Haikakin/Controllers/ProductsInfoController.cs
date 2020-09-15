@@ -187,8 +187,13 @@ namespace Haikakin.Controllers
 
             if (!_productInfoRepo.UpdateProductInfo(productInfo))
             {
-                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "更新錯誤" });
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "更新序號錯誤" });
             }
+
+            if (!_productRepo.UpdateProduct(_productRepo.GetProduct(productInfo.ProductId)))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "更新庫存錯誤" });
+            }            
 
             return Ok();
         }

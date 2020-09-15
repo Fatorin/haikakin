@@ -78,6 +78,10 @@ namespace Haikakin.Migrations
                         .HasColumnName("order_amount")
                         .HasColumnType("numeric");
 
+                    b.Property<string>("OrderCVSCode")
+                        .HasColumnName("order_cvs_code")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("OrderCreateTime")
                         .HasColumnName("order_create_time")
                         .HasColumnType("timestamp without time zone");

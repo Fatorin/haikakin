@@ -35,22 +35,7 @@ namespace Haikakin.Repository
 
         public bool UpdateProductInfo(ProductInfo productInfo)
         {
-            if (productInfo == null) return false;
-
             _db.ProductInfos.Update(productInfo);
-
-            //更新庫存
-            var product = _db.Products.SingleOrDefault(p => p.ProductId == productInfo.ProductId);
-            
-            int count = _db.ProductInfos.Where(
-                p => p.ProductId == product.ProductId &&
-                p.ProductStatus == ProductInfo.ProductStatusEnum.NotUse)
-                .Count();
-
-            product.Stock = count;
-
-            _db.Products.Update(product);
-
             return Save();
         }
 

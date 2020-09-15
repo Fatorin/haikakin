@@ -61,13 +61,6 @@
             <param name="orderDtos"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.FinishOrder(Haikakin.Models.NewebPay.NewebPayBaseResp)">
-            <summary>
-            結束指定訂單，用於第三方的回傳，所以不限定使用者
-            </summary>
-            <param name=""></param>
-            <returns></returns>
-        </member>
         <member name="M:Haikakin.Controllers.OrdersController.CancelOrder(System.Int32)">
             <summary>
             取消訂單，只有管理員可使用
@@ -87,11 +80,32 @@
             </summary>
             <returns></returns>
         </member>
+        <member name="M:Haikakin.Controllers.OrdersController.SwitchOrder(System.Boolean)">
+            <summary>
+            開啟或關閉下單功能
+            </summary>
+            <param name="trigger"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.ReceivePayResult(Haikakin.Models.NewebPay.NewebPayBaseResp)">
+            <summary>
+            結束指定訂單，用於第三方的回傳，所以不限定使用者
+            </summary>
+            <param name="newebPayModel"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.OrdersController.RecevieGetCVSCode(Haikakin.Models.NewebPay.NewebPayBaseResp)">
+            <summary>
+            第三方傳取號結果
+            </summary>
+            <param name="newebPayModel"></param>
+            <returns></returns>
+        </member>
         <member name="M:Haikakin.Controllers.OrdersController.GetOrderCVSCode(Haikakin.Models.Dtos.OrderCVSCodeQueryDto)">
             <summary>
             查序號
             </summary>
-            <param name=""></param>
+            <param name="model"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.ProductsController.GetProducts">
