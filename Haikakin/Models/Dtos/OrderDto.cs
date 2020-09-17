@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
 using static Haikakin.Models.OrderModel.Order;
 
 namespace Haikakin.Models.Dtos
@@ -17,5 +12,11 @@ namespace Haikakin.Models.Dtos
         public decimal OrderAmount { get; set; }
         public OrderPayWayEnum OrderPayWay { get; set; }
         public string OrderPaySerial { get; set; }
+        public string OrderThirdPaySerial { get; set; }
+        public string OrderCVSCode { get; set; }
+        public string OrderFee { get; set; }
+        public DateTime? OrderPayLimitTime { get; set; }
+        public CarrierTypeEnum CarrierType { get; set; }
+        public string CarrierNum { get; set; }
     }
 }

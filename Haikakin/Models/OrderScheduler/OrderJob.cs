@@ -99,8 +99,7 @@ namespace Haikakin.Models.OrderScheduler
             .Build();
             var trigger = TriggerBuilder
             .Create()
-            //.StartAt(DateTimeOffset.Now.AddMinutes(2))
-            .StartAt(DateTimeOffset.Now.AddMinutes(60))
+            .StartAt(DateTime.Now.AddMinutes(60))
             .Build();
             //call the scheduler.ScheduleJob
             _logger.LogInformation("開始計時");

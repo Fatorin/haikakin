@@ -26,6 +26,9 @@ namespace Haikakin.Models.OrderModel
         public string OrderCVSCode { get; set; }
         public string OrderFee { get; set; }
         public DateTime? OrderPayLimitTime { get; set; }
+        public enum CarrierTypeEnum { None, Phone, Moica, Love }
+        public CarrierTypeEnum CarrierType { get; set; }
+        public string CarrierNum { get; set; }
         public decimal Exchange { get; set; }
         [Required]
         [ForeignKey("UserId")]

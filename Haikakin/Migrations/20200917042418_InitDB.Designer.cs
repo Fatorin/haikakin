@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Haikakin.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20200915153832_InitDB")]
+    [Migration("20200917042418_InitDB")]
     partial class InitDB
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -71,6 +71,14 @@ namespace Haikakin.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("CarrierNum")
+                        .HasColumnName("carrier_num")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CarrierType")
+                        .HasColumnName("carrier_type")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("Exchange")
                         .HasColumnName("exchange")

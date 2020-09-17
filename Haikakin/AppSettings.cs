@@ -17,12 +17,12 @@ namespace Haikakin
         public string UserSecret { get; set; }
         public string EmailSecret { get; set; }
         public string MailgunAPIKey { get; set; }
-        public string ECPayMerchantID { get; set; }
-        public string ECPayHashKey { get; set; }
-        public string ECPayHashIV { get; set; }
         public string NewebPayMerchantID { get; set; }
         public string NewebPayHashKey { get; set; }
         public string NewebPayHashIV { get; set; }
+        public string EzPayMerchantID { get; set; }
+        public string EzPayHashKey { get; set; }
+        public string EzPayHashIV { get; set; }
         public string SerialHashKey { get; set; }
         public string SerialHashIV { get; set; }
     }

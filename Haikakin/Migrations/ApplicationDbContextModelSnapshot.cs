@@ -70,6 +70,14 @@ namespace Haikakin.Migrations
                         .HasAnnotation("Npgsql:IdentitySequenceOptions", "'20001000', '1', '', '', 'False', '1'")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<string>("CarrierNum")
+                        .HasColumnName("carrier_num")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CarrierType")
+                        .HasColumnName("carrier_type")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("Exchange")
                         .HasColumnName("exchange")
                         .HasColumnType("numeric");

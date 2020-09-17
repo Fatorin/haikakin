@@ -44,6 +44,8 @@ namespace Haikakin.Migrations
                     order_cvs_code = table.Column<string>(nullable: true),
                     order_fee = table.Column<string>(nullable: true),
                     order_pay_limit_time = table.Column<DateTime>(nullable: true),
+                    carrier_type = table.Column<int>(nullable: false),
+                    carrier_num = table.Column<string>(nullable: true),
                     exchange = table.Column<decimal>(nullable: false),
                     user_id = table.Column<int>(nullable: false)
                 },

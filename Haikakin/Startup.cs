@@ -143,7 +143,9 @@ namespace Haikakin
                 {
                     opt.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     //有NULL值時不回傳，如有異常再拿掉
-                    opt.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
+                    opt.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    //傳送時間時固定用UTC的字尾
+                    opt.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
                 });
         }
 
@@ -212,7 +214,6 @@ namespace Haikakin
             "https://localhost",
             "https://ccore.newebpay.com/MPG/mpg_gateway",
             "https://core.newebpay.com/MPG/mpg_gateway",
-            "https://postgate.ecpay.com.tw",
             "https://smsapi.mitake.com.tw"
             };
             return allowRange.Contains(origin);

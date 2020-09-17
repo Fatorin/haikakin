@@ -1,14 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Threading.Tasks;
-using Haikakin.Models.OrderModel;
+﻿using static Haikakin.Models.OrderModel.Order;
 
 namespace Haikakin.Models.Dtos
 {
     public class OrderCreateDto
+    {
+        public OrderCreateItems[] OrderCreateItems { get; set; }
+        public CarrierTypeEnum CarrierType { get; set; }
+        public string CarrierNum { get; set; }
+
+    }
+
+    public class OrderCreateItems
     {
         public int ProductId { get; set; }
         public int OrderCount { get; set; }

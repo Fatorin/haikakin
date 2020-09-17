@@ -1,23 +1,12 @@
-﻿using System;
-using System.Net.Http;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using AutoMapper;
-using Google.Apis.Auth;
+﻿using System.Security.Claims;
 using Haikakin.Extension;
 using Haikakin.Extension.Services;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
 using Haikakin.Models.MailModel;
-using Haikakin.Models.UserModel;
-using Haikakin.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
-using RestSharp;
-using RestSharp.Authenticators;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers

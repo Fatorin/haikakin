@@ -54,11 +54,11 @@
             <param name="orderId"> The id of the order</param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.OrdersController.CreateOrder(Haikakin.Models.Dtos.OrderCreateDto[])">
+        <member name="M:Haikakin.Controllers.OrdersController.CreateOrder(Haikakin.Models.Dtos.OrderCreateDto)">
             <summary>
             建立訂單
             </summary>
-            <param name="orderDtos"></param>
+            <param name="orderData"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Controllers.OrdersController.CancelOrder(System.Int32)">

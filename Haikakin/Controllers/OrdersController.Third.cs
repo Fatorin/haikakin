@@ -75,7 +75,11 @@ namespace Haikakin.Controllers
             }
 
             //產生藍新訂單
-            var newebPayNo = $"N{DateTime.Now.ToString("yyyyMMddHHmm")}{order.OrderId.ToString().Substring(4)}";
+
+            var newebPayNo =
+                $"N{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToString("yyyyMMddHHmm")}" +
+                $"{order.OrderId.ToString().Substring(4)}";
+
             var itemsText = new StringBuilder();
             foreach (var item in itemsNameList)
             {
@@ -202,12 +206,9 @@ namespace Haikakin.Controllers
 
             order.OrderStatus = OrderStatusType.Over;
             order.OrderLastUpdateTime = DateTime.UtcNow;
-            //第三方金流
-            order.OrderThirdPaySerial = convertModel.TradeNo;
             if (!_orderRepo.UpdateOrder(order))
             {
-                //$"更新資料錯誤，訂單編號{order.OrderId}"
-                _logger.LogInformation("特店系統異常_Order更新異常");
+                _logger.LogInformation($"特店系統異常:訂單編號{order.OrderId}");
                 return BadRequest("特店系統異常");
             }
 
@@ -220,6 +221,9 @@ namespace Haikakin.Controllers
                 _logger.LogInformation("序號發送異常");
                 return BadRequest("特店系統異常");
             };
+
+            //送發票
+            SendReceipt(order.OrderId);
 
             return Ok();
         }
@@ -496,54 +500,158 @@ namespace Haikakin.Controllers
             return inputModel;
         }
 
-        private void SendReceipt()
+        [HttpGet("TestReceip")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
+        [AllowAnonymous]
+        public IActionResult TestReceip(int orderId)
         {
-            /*string merchantID = _appSettings.NewebPayMerchantID;
-            string merchantOrderNo = order.OrderPaySerial;
-            int amt = int.Parse($"{order.OrderAmount}");
+            if (SendReceipt(orderId))
+            {
+                return BadRequest("錯誤");
+            }
 
-            string checkValue = CryptoUtil.EncryptSHA256(
-                $"IV={_appSettings.NewebPayHashIV}&" +
-                $"Amt={amt}&" +
-                $"MerchantID={merchantID}&" +
-                $"MerchantOrderNo={merchantOrderNo}&" +
-                $"Key={_appSettings.NewebPayHashKey}");
+            return Ok();
+        }
+
+
+        private bool SendReceipt(int orderId)
+        {
+            string apiUrl = "https://cinv.ezpay.com.tw/Api/invoice_issue";
+            //正式平台 https://inv.ezpay.com.tw/Api/invoice_issue
+
+            var order = _orderRepo.GetOrder(orderId);
+            var user = _userRepo.GetUser(order.UserId);
+            //商品名稱與內容
+            //紀錄商品名稱
+            int buyCount = 0;
+            decimal amt = 0;
+            decimal taxRate = 5;
+            var orderInfos = _orderInfoRepo.GetOrderInfosByOrderId(order.OrderId);
+            foreach (var orderInfo in orderInfos)
+            {
+                Product product = _productRepo.GetProduct(orderInfo.ProductId);
+                buyCount += orderInfo.Count;
+                amt += product.Price * orderInfo.Count * product.AgentFeePercent / 100;
+            }
+            //總額先無條件進位
+            int amtTotal = decimal.ToInt32(Math.Ceiling(amt));
+            //稅額
+            int taxAmt = decimal.ToInt32(Math.Ceiling(amtTotal * taxRate));
+            //銷售額
+            int sellAmt = amtTotal - taxAmt;
+            //總額            
+            NewebPayReceipt newebPayReceipt = new NewebPayReceipt()
+            {
+                RespondType = "String",
+                Version = "1.4",
+                TimeStamp = $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}",
+                //ezPay平台交易序號
+                TransNum = null,
+                //MerchantOrderNo = order.OrderPaySerial,
+                MerchantOrderNo = "N1234567089",
+                //開發票方式
+                Status = "1",
+                CreateStatusTime = null,
+                //發票種類，開給用戶
+                Category = "B2C",
+                //買受人名稱
+                BuyerName = user.Username,
+                BuyerUBN = null,
+                BuyerAddress = null,
+                BuyerEmail = user.Email,
+                CarrierType = null,
+                CarrierNum = null,
+                LoveCode = null,
+                PrintFlag = "Y",
+                TaxType = "1",
+                TaxRate = (float)taxRate,
+                CustomsClearance = null,
+                //銷售額
+                Amt = amtTotal,
+                AmtSales = null,
+                AmtZero = null,
+                AmtFree = null,
+                //稅額
+                TaxAmt = taxAmt,
+                //發票金額
+                TotalAmt = amtTotal,
+                //商品名稱
+                ItemName = "代購",
+                ItemCount = 1,
+                ItemUnit = "次",
+                ItemPrice = amtTotal,
+                ItemAmt = amtTotal,
+                ItemTaxType = null,
+                Comment = null,
+            };
+
+            //如果是手機載具
+            if (order.CarrierType == CarrierTypeEnum.Phone)
+            {
+                newebPayReceipt.CarrierType = "0";
+                newebPayReceipt.CarrierNum = order.CarrierNum;
+            }
+
+            //如果是自然人憑證
+            if (order.CarrierType == CarrierTypeEnum.Moica)
+            {
+                newebPayReceipt.CarrierType = "1";
+                newebPayReceipt.CarrierNum = order.CarrierNum;
+            }
+
+            //如果是愛心捐
+            if (order.CarrierType == CarrierTypeEnum.Love)
+            {
+                newebPayReceipt.LoveCode = int.Parse(order.CarrierNum);
+            }
+
+            // 將model 轉換為List<KeyValuePair<string, string>>, null值不轉
+            List<KeyValuePair<string, string>> tradeData = LambdaUtil.ModelToKeyValuePairList<NewebPayReceipt>(newebPayReceipt);
+            // 將List<KeyValuePair<string, string>> 轉換為 key1=Value1&key2=Value2&key3=Value3...
+            string tradeQueryPara = string.Join("&", tradeData.Select(x => $"{x.Key}={x.Value}"));
+            NewebPayReceiptBase newebPayReceiptBase = new NewebPayReceiptBase()
+            {
+                MerchantID_ = _appSettings.EzPayMerchantID,
+                PostData_ = CryptoUtil.EncryptAES256(tradeQueryPara, _appSettings.EzPayHashKey, _appSettings.EzPayHashIV),
+            };
 
             RestClient client = new RestClient();
-            client.BaseUrl = new Uri("https://ccore.newebpay.com/API/QueryTradeInfo");
+            client.BaseUrl = new Uri(apiUrl);
             RestRequest request = new RestRequest();
-            request.AddParameter("MerchantID", merchantID);
-            request.AddParameter("Version", "1.2");
-            request.AddParameter("RespondType", "String");
-            request.AddParameter("CheckValue", checkValue);
-            request.AddParameter("TimeStamp", $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}");
-            request.AddParameter("MerchantOrderNo", merchantOrderNo);
-            request.AddParameter("Amt", amt);
+            request.AddParameter("MerchantID_", newebPayReceiptBase.MerchantID_);
+            request.AddParameter("PostData_", newebPayReceiptBase.PostData_);
             request.Method = Method.POST;
             var response = client.Execute(request);
 
+            //轉換回傳資料
             NameValueCollection decryptTradeCollection = HttpUtility.ParseQueryString(response.Content);
-            NewebPayQueryResp convertModel = LambdaUtil.DictionaryToObject<NewebPayQueryResp>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
+            NewebPayReceiptBaseResp convertModel = LambdaUtil.DictionaryToObject<NewebPayReceiptBaseResp>(decryptTradeCollection.AllKeys.ToDictionary(k => k, k => decryptTradeCollection[k]));
 
-            string checkValueResp = CryptoUtil.EncryptSHA256(
-                $"HashIV={_appSettings.NewebPayHashIV}&" +
-                $"Amt={convertModel.Amt}&" +
-                $"MerchantID={merchantID}&" +
-                $"MerchantOrderNo={merchantOrderNo}&" +
-                $"TradeNo={convertModel.TradeNo}&" +
-                $"HashKey={_appSettings.NewebPayHashKey}");
-
-            if (convertModel.CheckCode != checkValueResp)
+            if (convertModel.Status != "SUCCESS")
             {
-                result = false;
-                cvsCode = "";
-
+                _logger.LogInformation($"開立發票失敗：{convertModel.Status}");
+                return false;
             }
-            else
+
+            string checkValue = CryptoUtil.EncryptSHA256(
+                $"IV={_appSettings.NewebPayHashIV}&" +
+                $"InvoiceTransNo={convertModel.InvoiceTransNo}&" +
+                $"MerchantID={convertModel.MerchantID}&" +
+                $"MerchantOrderNo={convertModel.MerchantOrderNo}&" +
+                $"RandomNum={convertModel.RandomNum}&" +
+                $"TotalAmt={convertModel.TotalAmt}&" +
+                $"Key={_appSettings.NewebPayHashKey}");
+
+            if (convertModel.CheckCode != checkValue)
             {
-                result = true;
-                cvsCode = convertModel.PayInfo;
-            };*/
+                _logger.LogInformation("回傳檢查碼異常，無法開立發票");
+                return false;
+            }
+
+            return true;
         }
     }
 }

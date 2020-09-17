@@ -146,7 +146,7 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 建立訂單
         /// </summary>
-        /// <param name="orderDtos"></param>
+        /// <param name="orderData"></param>
         /// <returns></returns>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(NewebPayBase))]
@@ -155,8 +155,14 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [Authorize(Roles = "User,Admin")]
-        public IActionResult CreateOrder([FromBody] OrderCreateDto[] orderDtos)
+        public IActionResult CreateOrder([FromBody] OrderCreateDto orderData)
         {
+            //沒收到資料代表請求失敗
+            if (orderData == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
+            }
+
             if (!GlobalSetting.OrderSwitch)
             {
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "系統禁止下單" });
@@ -168,13 +174,9 @@ namespace Haikakin.Controllers
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者Token異常" });
             }
-            //沒收到資料代表請求失敗
-            if (orderDtos == null)
-            {
-                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
-            }
 
-            if (orderDtos.Length <= 0)
+            var orderItems = orderData.OrderCreateItems;
+            if (orderItems.Length <= 0)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "請求資料錯誤" });
             }
@@ -201,40 +203,42 @@ namespace Haikakin.Controllers
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "過多訂單未付款" });
             }*/
             //依序檢查商品剩餘數量並計算總價錢
-            foreach (OrderCreateDto dto in orderDtos)
+            //檢查載具
+
+            foreach (var orderItem in orderItems)
             {
                 //檢查是否有該商品
-                if (!_productRepo.ProductExists(dto.ProductId))
+                if (!_productRepo.ProductExists(orderItem.ProductId))
                 {
                     //商品不存在
                     return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品" });
                 }
                 //不能買
-                var product = _productRepo.GetProduct(dto.ProductId);
+                var product = _productRepo.GetProduct(orderItem.ProductId);
                 if (!product.CanBuy)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "商品已下架" });
                 }
                 //超過購買限制
-                if (product.Limit != 0 && dto.OrderCount > product.Limit)
+                if (product.Limit != 0 && orderItem.OrderCount > product.Limit)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "超過最大購買限制" });
                 }
                 //商品數量錯誤
-                if (dto.OrderCount <= 0)
+                if (orderItem.OrderCount <= 0)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "購買數量異常" });
                 }
                 //數量超過庫存
-                if (dto.OrderCount > product.Stock)
+                if (orderItem.OrderCount > product.Stock)
                 {
                     return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "庫存不足" });
                 }
 
                 //原始價格
-                price += product.Price * dto.OrderCount;
+                price += product.Price * orderItem.OrderCount;
                 //代購費用抽成
-                price += product.Price * dto.OrderCount * product.AgentFeePercent / 100;
+                price += product.Price * orderItem.OrderCount * product.AgentFeePercent / 100;
             }
 
             if (price <= 0)
@@ -244,6 +248,8 @@ namespace Haikakin.Controllers
 
             //用爬蟲抓匯率
             decimal exchange = ExchangeParseService.GetExchange();
+            //金額無條件進位
+            price = Math.Ceiling(price);
             //產生訂單物件
             var orderObj = new Order()
             {
@@ -254,12 +260,14 @@ namespace Haikakin.Controllers
                 OrderLastUpdateTime = DateTime.UtcNow,
                 OrderFee = $"{GlobalSetting.OrderFee}",
                 Exchange = exchange,
+                CarrierType = orderData.CarrierType,
+                CarrierNum = orderData.CarrierNum,
                 UserId = userId,
             };
             //DB建立訂單物件(不含訂單編號與檢查碼)
             var orderCreatedObj = _orderRepo.CreateOrder(orderObj);
             //產生訂單詳細資訊
-            foreach (OrderCreateDto dto in orderDtos)
+            foreach (var dto in orderItems)
             {
                 OrderInfo orderInfo = new OrderInfo()
                 {
