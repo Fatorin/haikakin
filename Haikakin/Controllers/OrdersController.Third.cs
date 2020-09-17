@@ -223,7 +223,7 @@ namespace Haikakin.Controllers
             };
 
             //送發票
-            SendReceipt(order.OrderId);
+            SendReceipt(order);
 
             return Ok();
         }
@@ -508,21 +508,26 @@ namespace Haikakin.Controllers
         [AllowAnonymous]
         public IActionResult TestReceip(int orderId)
         {
-            if (SendReceipt(orderId))
+            var order = _orderRepo.GetOrder(orderId);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            if (SendReceipt(order))
             {
                 return BadRequest("錯誤");
             }
 
-            return Ok();
+            return Ok("發票寄送成功");
         }
 
-
-        private bool SendReceipt(int orderId)
+        private bool SendReceipt(Order order)
         {
             string apiUrl = "https://cinv.ezpay.com.tw/Api/invoice_issue";
             //正式平台 https://inv.ezpay.com.tw/Api/invoice_issue
 
-            var order = _orderRepo.GetOrder(orderId);
             var user = _userRepo.GetUser(order.UserId);
             //商品名稱與內容
             //紀錄商品名稱
@@ -547,11 +552,10 @@ namespace Haikakin.Controllers
             {
                 RespondType = "String",
                 Version = "1.4",
-                TimeStamp = $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeMilliseconds()}",
+                TimeStamp = $"{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToUnixTimeSeconds()}",
                 //ezPay平台交易序號
                 TransNum = null,
-                //MerchantOrderNo = order.OrderPaySerial,
-                MerchantOrderNo = "N1234567089",
+                MerchantOrderNo = order.OrderPaySerial,
                 //開發票方式
                 Status = "1",
                 CreateStatusTime = null,
@@ -579,7 +583,7 @@ namespace Haikakin.Controllers
                 //發票金額
                 TotalAmt = amtTotal,
                 //商品名稱
-                ItemName = "代購",
+                ItemName = "數位商品代購服務費",
                 ItemCount = 1,
                 ItemUnit = "次",
                 ItemPrice = amtTotal,
@@ -637,13 +641,13 @@ namespace Haikakin.Controllers
             }
 
             string checkValue = CryptoUtil.EncryptSHA256(
-                $"IV={_appSettings.NewebPayHashIV}&" +
+                $"HashIV={_appSettings.NewebPayHashIV}&" +
                 $"InvoiceTransNo={convertModel.InvoiceTransNo}&" +
                 $"MerchantID={convertModel.MerchantID}&" +
                 $"MerchantOrderNo={convertModel.MerchantOrderNo}&" +
                 $"RandomNum={convertModel.RandomNum}&" +
                 $"TotalAmt={convertModel.TotalAmt}&" +
-                $"Key={_appSettings.NewebPayHashKey}");
+                $"HashKey={_appSettings.NewebPayHashKey}");
 
             if (convertModel.CheckCode != checkValue)
             {
