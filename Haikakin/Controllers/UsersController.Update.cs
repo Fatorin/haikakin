@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Haikakin.Extension;
+using Haikakin.Extension.NewebPayUtil;
 using Haikakin.Extension.Services;
 using Haikakin.Models;
 using Haikakin.Models.Dtos;
@@ -7,6 +8,7 @@ using Haikakin.Models.MailModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -177,7 +179,7 @@ namespace Haikakin.Controllers
             //寄驗證信
             var service = new SendMailService(_appSettings.MailgunAPIKey);
             EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, user.Email, EmailVerityModel.EmailVerityEnum.EmailModify);
-            if (!service.AccountMailBuild(mailModel))
+            if (!service.AccountMailBuild(mailModel, _appSettings.EmailSecretHashKey, _appSettings.EmailSecretHashIV))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
             };
@@ -234,22 +236,31 @@ namespace Haikakin.Controllers
         /// <summary>
         /// 信箱驗證含信箱修改
         /// </summary>
-        /// <param name="model"></param>
+        /// <param name="token"></param>
         /// <returns></returns>
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [HttpPost("EmailVerity")]
-        public IActionResult EmailVerity([FromBody] EmailVerityModel model)
+        [HttpGet("EmailVerity")]
+        public IActionResult EmailVerity(string token)
         {
+
+            token = CryptoUtil.DecryptAESHex(token, _appSettings.EmailSecretHashKey, _appSettings.EmailSecretHashIV);
+            EmailAccount model = JsonConvert.DeserializeObject<EmailAccount>(token);
+
             if (model == null)
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
             }
 
-            var user = _userRepo.GetUser(model.UserId);
+            if(string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.UserEmail) || string.IsNullOrEmpty(model.UserName))
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
+            }
+
+            var user = _userRepo.GetUser(int.Parse(model.UserId));
             if (user == null)
             {
                 return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "沒有此用戶" });

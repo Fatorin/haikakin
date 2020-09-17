@@ -106,7 +106,7 @@ namespace Haikakin.Controllers
             //補寄信流程
             SendMailService service = new SendMailService(_appSettings.MailgunAPIKey);
             EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, user.Email, EmailVerityModel.EmailVerityEnum.EmailVerity);
-            if (!service.AccountMailBuild(mailModel))
+            if (!service.AccountMailBuild(mailModel, _appSettings.EmailSecretHashKey, _appSettings.EmailSecretHashIV))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
             };

@@ -1,8 +1,10 @@
-﻿using Haikakin.Models;
+﻿using Haikakin.Extension.NewebPayUtil;
+using Haikakin.Models;
 using Haikakin.Models.MailModel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using RestSharp;
 using RestSharp.Authenticators;
 using System;
@@ -48,10 +50,12 @@ namespace Haikakin.Extension.Services
             return response.IsSuccessful;
         }
 
-        public bool AccountMailBuild(EmailAccount model)
+        public bool AccountMailBuild(EmailAccount model, string hash, string iv)
         {
             var title = "Haikakin 會員驗證信";
-            var url = $"http://www.haikakin.com/mailverifcation?uid={model.UserId}&email={model.UserEmail}&emailVerityAction={model.EmailVerityAction:d}";
+            string token = JsonConvert.SerializeObject(model);            
+            token = CryptoUtil.EncryptAESHex(token, hash, iv);
+            string url = $"http://www.haikakin.com/mailverifcation?token={token}";
             string body = File.ReadAllText(Path.Combine("EmailTemplates/Account.html"));
             body = body.Replace("#username", $"{model.UserName}");
             body = body.Replace("#url", url);
@@ -77,7 +81,7 @@ namespace Haikakin.Extension.Services
             string body = File.ReadAllText(Path.Combine("EmailTemplates/Order.html"));
             var sb = new StringBuilder();
 
-            foreach(var data in model.OrderItemList)
+            foreach (var data in model.OrderItemList)
             {
                 sb.Append($"<tr><td id=\"itemname\">{data.OrderName}</td><td id=\"itemcontext\">{data.OrderContext}</td></tr>");
             }

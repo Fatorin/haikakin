@@ -500,29 +500,6 @@ namespace Haikakin.Controllers
             return inputModel;
         }
 
-        [HttpGet("TestReceip")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(string))]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(string))]
-        [AllowAnonymous]
-        public IActionResult TestReceip(int orderId)
-        {
-            var order = _orderRepo.GetOrder(orderId);
-
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            if (SendReceipt(order))
-            {
-                return BadRequest("錯誤");
-            }
-
-            return Ok("發票寄送成功");
-        }
-
         private bool SendReceipt(Order order)
         {
             string apiUrl = "https://cinv.ezpay.com.tw/Api/invoice_issue";

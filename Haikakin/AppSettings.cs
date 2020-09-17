@@ -12,10 +12,9 @@ namespace Haikakin
         public string FacebookAppSecret { get; set; }
         public string MitakeSmsAccountID { get; set; }
         public string MitakeSmsAccountPassword { get; set; }
-        public string TwilioSmsAccountID { get; set; }
-        public string TwilioSmsAuthToken { get; set; }
         public string UserSecret { get; set; }
-        public string EmailSecret { get; set; }
+        public string EmailSecretHashKey { get; set; }
+        public string EmailSecretHashIV { get; set; }
         public string MailgunAPIKey { get; set; }
         public string NewebPayMerchantID { get; set; }
         public string NewebPayHashKey { get; set; }

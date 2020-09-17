@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using static Haikakin.Models.OrderModel.Order;
 
 namespace Haikakin.Extension
 {
@@ -64,6 +65,34 @@ namespace Haikakin.Extension
             }
 
             return builder.ToString();
+        }
+
+        public static bool CheckCarrierFormat(CarrierTypeEnum carrierType, string carrierNum)
+        {
+            string regexPhone = @"^[\\]{1}[A-Z0-9+-.]{7}$";
+            string regexMoica = @"^[A-Z]{2}[0-9]{14}$";
+            string regexLove = @"^[0-9]{3,7}$";
+
+            switch (carrierType)
+            {
+                case CarrierTypeEnum.None:
+                    return string.IsNullOrEmpty(carrierNum);
+
+                case CarrierTypeEnum.Phone:
+                    Regex rgxPhone = new Regex(regexPhone);
+                    return rgxPhone.IsMatch(carrierNum);
+
+                case CarrierTypeEnum.Moica:
+                    Regex rgxMoica = new Regex(regexMoica);
+                    return rgxMoica.IsMatch(carrierNum);
+
+                case CarrierTypeEnum.Love:
+                    Regex rgxLove = new Regex(regexLove);
+                    return rgxLove.IsMatch(carrierNum);
+
+                default:
+                    return false;
+            }
         }
     }
 }

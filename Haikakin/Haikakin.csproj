@@ -24,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Migrations\20200917042418_InitDB.cs" />
-    <Compile Include="Migrations\20200917042418_InitDB.Designer.cs" />
+    <Compile Include="Migrations\20200917145348_InitDB.cs" />
+    <Compile Include="Migrations\20200917145348_InitDB.Designer.cs" />
     <Compile Include="Migrations\ApplicationDbContextModelSnapshot.cs" />
   </ItemGroup>
 

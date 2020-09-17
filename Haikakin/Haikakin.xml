@@ -242,11 +242,11 @@
             <param name="userDto"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.UsersController.EmailVerity(Haikakin.Models.EmailVerityModel)">
+        <member name="M:Haikakin.Controllers.UsersController.EmailVerity(System.String)">
             <summary>
             信箱驗證含信箱修改
             </summary>
-            <param name="model"></param>
+            <param name="token"></param>
             <returns></returns>
         </member>
         <member name="M:Haikakin.Extension.NewebPayUtil.CryptoUtil.EncryptAES(System.Byte[],System.String,System.String)">

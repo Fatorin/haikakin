@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using AutoMapper;
 using DocumentFormat.OpenXml.Office2010.CustomUI;
 using Haikakin.Extension;
@@ -202,9 +203,14 @@ namespace Haikakin.Controllers
             {
                 return StatusCode(403, new ErrorPack { ErrorCode = 1000, ErrorMessage = "過多訂單未付款" });
             }*/
-            //依序檢查商品剩餘數量並計算總價錢
-            //檢查載具
 
+            //檢查載具
+            if (!StringExtension.CheckCarrierFormat(orderData.CarrierType, orderData.CarrierNum))
+            {
+                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品" });
+            }
+
+            //依序檢查商品剩餘數量並計算總價錢
             foreach (var orderItem in orderItems)
             {
                 //檢查是否有該商品
