@@ -71,22 +71,39 @@ namespace Haikakin.Controllers
             foreach (var orderInfo in orderInfos)
             {
                 var product = _productRepo.GetProduct(orderInfo.ProductId);
-                itemsNameList.Add($"{product.ProductName} x {orderInfo.Count}");
+                itemsNameList.Add($"{product.ProductName}x{orderInfo.Count}");
             }
 
             //產生藍新訂單
-
             var newebPayNo =
                 $"N{DateTimeOffset.UtcNow.ToOffset(new TimeSpan(8, 0, 0)).ToString("yyyyMMddHHmm")}" +
                 $"{order.OrderId.ToString().Substring(4)}";
 
-            var itemsText = new StringBuilder();
-            foreach (var item in itemsNameList)
+            //產生商品名稱
+            var itemStringBuilder = new StringBuilder();
+            for (int i = 0; i < itemsNameList.Count; i++)
             {
-                itemsText.AppendLine(item);
+                if (i == itemsNameList.Count - 1)
+                {
+                    itemStringBuilder.Append(itemsNameList[i]);
+                }
+                else
+                {
+                    itemStringBuilder.Append(itemsNameList[i] + "，");
+                }                
+            }
+            //刪除超過的字元
+            string itemText;
+            if (itemStringBuilder.Length > 50)
+            {
+                itemText = itemStringBuilder.ToString().Substring(0, 50);
+            }
+            else
+            {
+                itemText = itemStringBuilder.ToString();
             }
 
-            var thirdData = CreateNewbPayData(newebPayNo, itemsText.ToString(), decimal.ToInt32(order.OrderAmount), user.Email, "CVS");
+            var thirdData = CreateNewbPayData(newebPayNo, itemText, decimal.ToInt32(order.OrderAmount), user.Email, "CVS");
             //更新訂單的訂單編號
             order.OrderPaySerial = newebPayNo;
             _orderRepo.UpdateOrder(order);

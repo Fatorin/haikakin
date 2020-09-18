@@ -207,7 +207,7 @@ namespace Haikakin.Controllers
             //檢查載具
             if (!StringExtension.CheckCarrierFormat(orderData.CarrierType, orderData.CarrierNum))
             {
-                return NotFound(new ErrorPack { ErrorCode = 1000, ErrorMessage = "不存在的商品" });
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "載具格式錯誤" });
             }
 
             //依序檢查商品剩餘數量並計算總價錢

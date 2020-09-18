@@ -69,7 +69,7 @@ namespace Haikakin.Extension
 
         public static bool CheckCarrierFormat(CarrierTypeEnum carrierType, string carrierNum)
         {
-            string regexPhone = @"^[\\]{1}[A-Z0-9+-.]{7}$";
+            string regexPhone = @"^[/]{1}[A-Z0-9+-.]{7}$";
             string regexMoica = @"^[A-Z]{2}[0-9]{14}$";
             string regexLove = @"^[0-9]{3,7}$";
 
