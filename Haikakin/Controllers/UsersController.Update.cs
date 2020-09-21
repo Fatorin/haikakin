@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using static Haikakin.Models.EmailVerityModel;
 using static Haikakin.Models.User;
 
 namespace Haikakin.Controllers
@@ -178,8 +179,52 @@ namespace Haikakin.Controllers
 
             //寄驗證信
             var service = new SendMailService(_appSettings.MailgunAPIKey);
-            EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, user.Email, EmailVerityModel.EmailVerityEnum.EmailModify);
+            EmailAccount mailModel = new EmailAccount($"{user.UserId}", user.Username, userDto.UserEmail, EmailVerityModel.EmailVerityEnum.EmailModify);
             if (!service.AccountMailBuild(mailModel, _appSettings.EmailSecretHashKey, _appSettings.EmailSecretHashIV))
+            {
+                return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
+            };
+
+            return Ok();
+        }
+
+
+        /// <summary>
+        /// 寄信給系統
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [HttpPost("SendContactUs")]
+        public IActionResult SendContactUs([FromBody] EmailContactUsDto model)
+        {
+            if (model == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送異常" });
+            }
+
+            var identity = HttpContext.User.Identity as ClaimsIdentity;
+            int userId = int.Parse(identity.FindFirst(ClaimTypes.Name).Value);
+
+            var user = _userRepo.GetUser(userId);
+            if (user == null)
+            {
+                return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "使用者異常" });
+            }
+
+            var service = new SendMailService(_appSettings.MailgunAPIKey);
+            var mailModel = new EmailContactUs()
+            {
+                UserId = $"{userId}",
+                UserName = user.Username,
+                Context = model.Context,
+                Email = user.Email,
+                Title = model.Title,
+                TradeNo = model.TradeNo,
+            };
+            if (!service.ContractUsBuild(mailModel))
             {
                 return StatusCode(500, new ErrorPack { ErrorCode = 1000, ErrorMessage = "信件系統異常，可能無法收信" });
             };
@@ -244,9 +289,8 @@ namespace Haikakin.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ErrorPack))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [HttpGet("EmailVerity")]
-        public IActionResult EmailVerity(string token)
+        public IActionResult EmailVerity(string token, EmailVerityEnum type)
         {
-
             token = CryptoUtil.DecryptAESHex(token, _appSettings.EmailSecretHashKey, _appSettings.EmailSecretHashIV);
             EmailAccount model = JsonConvert.DeserializeObject<EmailAccount>(token);
 
@@ -255,7 +299,7 @@ namespace Haikakin.Controllers
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
             }
 
-            if(string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.UserEmail) || string.IsNullOrEmpty(model.UserName))
+            if (string.IsNullOrEmpty(model.UserId) || string.IsNullOrEmpty(model.UserEmail) || string.IsNullOrEmpty(model.UserName))
             {
                 return BadRequest(new ErrorPack { ErrorCode = 1000, ErrorMessage = "資料傳送錯誤" });
             }

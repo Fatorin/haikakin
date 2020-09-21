@@ -66,6 +66,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="EmailTemplates\ContactsUs.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="EmailTemplates\PasswordForget.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

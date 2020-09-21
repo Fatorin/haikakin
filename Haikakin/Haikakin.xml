@@ -242,7 +242,13 @@
             <param name="userDto"></param>
             <returns></returns>
         </member>
-        <member name="M:Haikakin.Controllers.UsersController.EmailVerity(System.String)">
+        <member name="M:Haikakin.Controllers.UsersController.SendContactUs(Haikakin.Models.Dtos.EmailContactUsDto)">
+            <summary>
+            寄信給系統
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Haikakin.Controllers.UsersController.EmailVerity(System.String,Haikakin.Models.EmailVerityModel.EmailVerityEnum)">
             <summary>
             信箱驗證含信箱修改
             </summary>

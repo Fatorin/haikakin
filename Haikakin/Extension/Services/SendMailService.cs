@@ -53,9 +53,9 @@ namespace Haikakin.Extension.Services
         public bool AccountMailBuild(EmailAccount model, string hash, string iv)
         {
             var title = "Haikakin 會員驗證信";
-            string token = JsonConvert.SerializeObject(model);            
+            string token = JsonConvert.SerializeObject(model);
             token = CryptoUtil.EncryptAESHex(token, hash, iv);
-            string url = $"http://www.haikakin.com/mailverifcation?token={token}";
+            string url = $"http://www.haikakin.com/mailverifcation?token={token}?type={model.EmailVerityAction}";
             string body = File.ReadAllText(Path.Combine("EmailTemplates/Account.html"));
             body = body.Replace("#username", $"{model.UserName}");
             body = body.Replace("#url", url);
@@ -102,6 +102,20 @@ namespace Haikakin.Extension.Services
             body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
 
             return SendMailActive(new EmailModel(model.UserEmail, title, body));
+        }
+
+        public bool ContractUsBuild(EmailContactUs model)
+        {
+            string localEmail = @"service@haikakin.com";
+            string body = File.ReadAllText(Path.Combine("EmailTemplates/ContactsUs.html"));
+            body = body.Replace("#username", $"{model.UserName}");
+            body = body.Replace("#userId", model.UserId);
+            body = body.Replace("#userEmail", $"{model.Email}");
+            body = body.Replace("#tradeNo", model.TradeNo);
+            body = body.Replace("#context", $"{model.Context}");
+            body = body.Replace("#timespan", DateTime.UtcNow.ToString("yyyy/MM/dd HH:mm:ss"));
+
+            return SendMailActive(new EmailModel(localEmail, model.Title, body));
         }
     }
 }
